@@ -13,7 +13,7 @@ function buildOpenApiSpec(): any {
         },
         servers: [
             {
-                url: "https://your-deployed-domain.com"
+                url: "https://mcp-canvas-server.onrender.com"
             }
         ],
         paths: {
