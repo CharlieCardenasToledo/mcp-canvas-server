@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { Course, Module, Assignment, Submission, User, Page, FileAttachment, Announcement, DiscussionTopic, DiscussionEntry } from '../common/types.js';
+import { Course, Module, Assignment, Quiz, Submission, User, Page, FileAttachment, Announcement, DiscussionTopic, DiscussionEntry } from '../common/types.js';
 
 export class CanvasClient {
     private client: AxiosInstance;
@@ -67,6 +67,12 @@ export class CanvasClient {
         });
     }
 
+    async getQuizzes(courseId: number): Promise<Quiz[]> {
+        return this.getAllPages<Quiz>(`courses/${courseId}/quizzes`, {
+            per_page: 100
+        });
+    }
+
     async getAssignment(courseId: number, assignmentId: number): Promise<Assignment> {
         const response = await this.client.get<Assignment>(`courses/${courseId}/assignments/${assignmentId}`, {
             params: {
@@ -89,6 +95,29 @@ export class CanvasClient {
             `courses/${courseId}/assignments/${assignmentId}`,
             {
                 assignment: dates
+            }
+        );
+        return response.data;
+    }
+
+    async getQuiz(courseId: number, quizId: number): Promise<Quiz> {
+        const response = await this.client.get<Quiz>(`courses/${courseId}/quizzes/${quizId}`);
+        return response.data;
+    }
+
+    async updateQuizDates(
+        courseId: number,
+        quizId: number,
+        dates: {
+            due_at?: string | null;
+            unlock_at?: string | null;
+            lock_at?: string | null;
+        }
+    ): Promise<Quiz> {
+        const response = await this.client.put<Quiz>(
+            `courses/${courseId}/quizzes/${quizId}`,
+            {
+                quiz: dates
             }
         );
         return response.data;
@@ -143,6 +172,23 @@ export class CanvasClient {
         return this.getAllPages<User>(`courses/${courseId}/users`, {
             enrollment_type: ['student'],
             include: ['email', 'enrollments'],
+            per_page: 100
+        });
+    }
+
+    async getStudentInCourse(courseId: number, studentId: number): Promise<User> {
+        const response = await this.client.get<User>(`courses/${courseId}/users/${studentId}`, {
+            params: {
+                include: ['email', 'enrollments']
+            }
+        });
+        return response.data;
+    }
+
+    async getStudentCourseSubmissions(courseId: number, studentId: number): Promise<any[]> {
+        return this.getAllPages<any>(`courses/${courseId}/students/submissions`, {
+            student_ids: [studentId],
+            include: ['assignment'],
             per_page: 100
         });
     }

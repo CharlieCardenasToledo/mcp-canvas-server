@@ -130,6 +130,43 @@ export interface User {
     id: number;
     name: string;
     email?: string;
+    sortable_name?: string;
+    sis_user_id?: string;
+    login_id?: string;
+    enrollments?: Enrollment[];
+}
+
+export interface Quiz {
+    id?: number;
+    title: string;
+    description?: string | null;
+    due_at?: string | null;
+    lock_at?: string | null;
+    unlock_at?: string | null;
+    published?: boolean;
+    points_possible?: number | null;
+    time_limit?: number | null;
+}
+
+export interface Enrollment {
+    id?: number;
+    course_id?: number;
+    user_id?: number;
+    type?: string;
+    role?: string;
+    enrollment_state?: string;
+    grades?: {
+        html_url?: string;
+        current_grade?: string | null;
+        final_grade?: string | null;
+        current_score?: number | null;
+        final_score?: number | null;
+        current_points?: number | null;
+        unposted_current_grade?: string | null;
+        unposted_final_grade?: string | null;
+        unposted_current_score?: number | null;
+        unposted_final_score?: number | null;
+    };
 }
 
 

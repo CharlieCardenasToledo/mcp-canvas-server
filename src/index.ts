@@ -21,8 +21,10 @@ import { ConfigManager } from "./common/config-manager.js";
 // Import Modular Components
 import { courseTools } from "./tools/course-tools.js";
 import { assignmentTools } from "./tools/assignment-tools.js";
+import { quizTools } from "./tools/quiz-tools.js";
 import { gradingTools } from "./tools/grading-tools.js";
 import { communicationTools } from "./tools/communication-tools.js";
+import { studentTools } from "./tools/student-tools.js";
 import { canvasResources } from "./resources/canvas-resources.js";
 import { canvasPrompts } from "./prompts/canvas-prompts.js";
 import { ToolDefinition } from "./common/tool-model.js";
@@ -111,8 +113,10 @@ program
         const allTools: ToolDefinition[] = [
             ...courseTools,
             ...assignmentTools,
+            ...quizTools,
             ...gradingTools,
-            ...communicationTools
+            ...communicationTools,
+            ...studentTools
         ];
 
         // --- Tool Handlers ---

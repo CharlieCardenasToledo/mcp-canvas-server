@@ -169,6 +169,144 @@ function buildOpenApiSpec(): any {
                         }
                     }
                 }
+            },
+            "/courses/{courseId}/quizzes": {
+                get: {
+                    operationId: "listQuizzes",
+                    summary: "List quizzes in a course",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    responses: {
+                        "200": {
+                            description: "Quizzes list"
+                        }
+                    }
+                }
+            },
+            "/courses/{courseId}/quizzes/{quizId}": {
+                get: {
+                    operationId: "getQuiz",
+                    summary: "Get quiz details",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    responses: {
+                        "200": {
+                            description: "Quiz details"
+                        }
+                    }
+                }
+            },
+            "/courses/{courseId}/quizzes/{quizId}/dates": {
+                patch: {
+                    operationId: "updateQuizDates",
+                    summary: "Update quiz due/unlock/lock dates",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        due_at: { type: ["string", "null"] },
+                                        unlock_at: { type: ["string", "null"] },
+                                        lock_at: { type: ["string", "null"] }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        "200": {
+                            description: "Updated quiz"
+                        },
+                        "400": {
+                            description: "Invalid payload"
+                        }
+                    }
+                }
+            },
+            "/courses/{courseId}/assignments/bulk-due-date": {
+                patch: {
+                    operationId: "bulkUpdateAssignmentDueDateByQuery",
+                    summary: "Update due date for assignments matched by query terms in their names",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        query_terms: {
+                                            type: "array",
+                                            items: { type: "string" },
+                                            description: "All terms must appear in assignment name (case-insensitive)"
+                                        },
+                                        due_at: {
+                                            type: "string",
+                                            description: "ISO-8601 due date to apply (e.g., 2026-02-12T23:59:00-05:00)"
+                                        },
+                                        limit: {
+                                            type: "integer",
+                                            default: 20,
+                                            minimum: 1,
+                                            maximum: 100
+                                        },
+                                        dry_run: {
+                                            type: "boolean",
+                                            default: false
+                                        }
+                                    },
+                                    required: ["query_terms", "due_at"]
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        "200": {
+                            description: "Bulk update result"
+                        }
+                    }
+                }
             }
         }
     };
@@ -267,6 +405,109 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             unlock_at,
             lock_at
         });
+    });
+
+    app.get<{ Params: { courseId: string } }>("/courses/:courseId/quizzes", async (request) => {
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        return client.getQuizzes(courseId);
+    });
+
+    app.get<{ Params: { courseId: string; quizId: string } }>(
+        "/courses/:courseId/quizzes/:quizId",
+        async (request) => {
+            const courseId = Number.parseInt(request.params.courseId, 10);
+            const quizId = Number.parseInt(request.params.quizId, 10);
+            return client.getQuiz(courseId, quizId);
+        }
+    );
+
+    app.patch<{
+        Params: { courseId: string; quizId: string };
+        Body: { due_at?: string | null; unlock_at?: string | null; lock_at?: string | null };
+    }>("/courses/:courseId/quizzes/:quizId/dates", async (request, reply) => {
+        const { due_at, unlock_at, lock_at } = request.body || {};
+        if (due_at === undefined && unlock_at === undefined && lock_at === undefined) {
+            return reply.code(400).send({
+                error: "At least one date field is required: due_at, unlock_at, or lock_at."
+            });
+        }
+
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const quizId = Number.parseInt(request.params.quizId, 10);
+        return client.updateQuizDates(courseId, quizId, {
+            due_at,
+            unlock_at,
+            lock_at
+        });
+    });
+
+    app.patch<{
+        Params: { courseId: string };
+        Body: { query_terms?: string[]; due_at?: string; limit?: number; dry_run?: boolean };
+    }>("/courses/:courseId/assignments/bulk-due-date", async (request, reply) => {
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const terms = (request.body.query_terms || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
+        const dueAt = request.body.due_at;
+        const dryRun = request.body.dry_run === true;
+        const rawLimit = request.body.limit ?? 20;
+        const limit = Math.min(Math.max(rawLimit, 1), 100);
+
+        if (!terms.length || !dueAt) {
+            return reply.code(400).send({
+                error: "query_terms and due_at are required."
+            });
+        }
+
+        const assignments = await client.getAssignments(courseId);
+        const matched = assignments
+            .filter((a) => {
+                const name = (a.name || "").toLowerCase();
+                return terms.every((term) => name.includes(term));
+            })
+            .slice(0, limit);
+
+        const results = [];
+        for (const assignment of matched) {
+            if (!assignment.id) continue;
+            if (dryRun) {
+                results.push({
+                    assignment_id: assignment.id,
+                    assignment_name: assignment.name,
+                    old_due_at: assignment.due_at ?? null,
+                    new_due_at: dueAt,
+                    status: "matched_only"
+                });
+                continue;
+            }
+
+            try {
+                const updated = await client.updateAssignmentDates(courseId, assignment.id, { due_at: dueAt });
+                results.push({
+                    assignment_id: updated.id ?? assignment.id,
+                    assignment_name: updated.name,
+                    old_due_at: assignment.due_at ?? null,
+                    new_due_at: updated.due_at ?? dueAt,
+                    status: "updated"
+                });
+            } catch (error: any) {
+                results.push({
+                    assignment_id: assignment.id,
+                    assignment_name: assignment.name,
+                    old_due_at: assignment.due_at ?? null,
+                    new_due_at: dueAt,
+                    status: "error",
+                    error: error?.message || "Unknown error"
+                });
+            }
+        }
+
+        return {
+            course_id: courseId,
+            matched_count: matched.length,
+            updated_count: results.filter((r) => r.status === "updated").length,
+            dry_run: dryRun,
+            results
+        };
     });
 
     await app.listen({ host, port });
