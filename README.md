@@ -109,6 +109,19 @@ By default it runs on `http://localhost:3000`:
 - Swagger UI: `http://localhost:3000/docs`
 - OpenAPI JSON: `http://localhost:3000/openapi.json`
 
+### Deploy on Render
+
+This repo includes `render.yaml` for one-click setup as a Web Service.
+
+Required environment variables in Render:
+- `CANVAS_API_TOKEN`
+- `CANVAS_API_DOMAIN` (example: `your-school.instructure.com`)
+
+Render will:
+- Build with `npm install && npm run build`
+- Start with `npm run start:http`
+- Check health on `/health`
+
 ## Resources
 
 You can "read" Canvas content directly if your AI client supports resources:
