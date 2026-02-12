@@ -20,5 +20,5 @@ COPY --from=builder /app/node_modules ./node_modules
 ENV CANVAS_API_TOKEN=""
 ENV CANVAS_API_DOMAIN=""
 
-# Run the server
-CMD ["node", "dist/index.js"]
+# Run HTTP mode for Render/GPT Actions
+CMD ["sh", "-c", "node dist/index.js serve-http --host 0.0.0.0 --port ${PORT:-3000}"]
