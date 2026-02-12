@@ -29,3 +29,39 @@ export async function resolveCourseId(client: CanvasClient, courseIdentifier: st
 
     throw new Error(`Course not found matching: "${courseIdentifier}". Please provide a valid Course ID or a more specific name.`);
 }
+
+export async function resolveStudentId(
+    client: CanvasClient,
+    courseId: number,
+    studentIdentifier: string | number
+): Promise<number> {
+    if (typeof studentIdentifier === "number") {
+        return studentIdentifier;
+    }
+
+    if (!isNaN(Number(studentIdentifier))) {
+        return Number(studentIdentifier);
+    }
+
+    const students = await client.getEnrollments(courseId);
+    const searchTerm = studentIdentifier.toLowerCase();
+
+    const matchedStudent = students.find((student) => {
+        const name = (student.name || "").toLowerCase();
+        const sortableName = (student.sortable_name || "").toLowerCase();
+        const email = (student.email || "").toLowerCase();
+        const login = (student.login_id || "").toLowerCase();
+        return (
+            name.includes(searchTerm) ||
+            sortableName.includes(searchTerm) ||
+            email.includes(searchTerm) ||
+            login.includes(searchTerm)
+        );
+    });
+
+    if (matchedStudent) {
+        return matchedStudent.id;
+    }
+
+    throw new Error(`Student not found matching: "${studentIdentifier}". Please provide a valid student ID or a more specific name.`);
+}
