@@ -8,7 +8,7 @@ export const assignmentTools: ToolDefinition[] = [
         name: "canvas_get_assignments",
         tool: {
             name: "canvas_get_assignments",
-            description: "List all assignments for a specific course",
+            description: "List assignments for a course (supports search, upcoming filter, and limit)",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -16,16 +16,66 @@ export const assignmentTools: ToolDefinition[] = [
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
                     },
+                    search: {
+                        type: "string",
+                        description: "Filter by assignment name (contains, case-insensitive)"
+                    },
+                    limit: {
+                        type: "number",
+                        description: "Max number of items to return (default 50, max 200)"
+                    },
+                    upcoming_only: {
+                        type: "boolean",
+                        description: "If true, only assignments with due_at >= now"
+                    },
+                    full: {
+                        type: "boolean",
+                        description: "If true, return full assignment objects. Default false returns compact payload."
+                    }
                 },
                 required: ["course_id"],
             },
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                search: z.string().optional(),
+                limit: z.coerce.number().optional(),
+                upcoming_only: z.boolean().optional(),
+                full: z.boolean().optional()
+            }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const assignments = await client.getAssignments(courseId);
+            const search = (input.search || "").toLowerCase().trim();
+            const now = new Date();
+            const limit = Math.min(Math.max(input.limit ?? 50, 1), 200);
+
+            const filtered = assignments.filter((a) => {
+                const matchesSearch = !search || (a.name || "").toLowerCase().includes(search);
+                if (!matchesSearch) return false;
+                if (!input.upcoming_only) return true;
+                if (!a.due_at) return false;
+                return new Date(a.due_at) >= now;
+            });
+
+            if (input.full) {
+                return {
+                    content: [{ type: "text", text: JSON.stringify(filtered.slice(0, limit), null, 2) }],
+                };
+            }
+
+            const compact = filtered.slice(0, limit).map((a) => ({
+                id: a.id ?? null,
+                name: a.name,
+                due_at: a.due_at ?? null,
+                unlock_at: a.unlock_at ?? null,
+                lock_at: a.lock_at ?? null,
+                points_possible: a.points_possible ?? null,
+                published: a.published ?? null
+            }));
+
             return {
-                content: [{ type: "text", text: JSON.stringify(assignments, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(compact, null, 2) }],
             };
         }
     },
@@ -233,6 +283,112 @@ export const assignmentTools: ToolDefinition[] = [
 
             return {
                 content: [{ type: "text", text: JSON.stringify(updatedAssignment, null, 2) }],
+            };
+        }
+    },
+    {
+        name: "canvas_bulk_update_assignment_due_date_by_query",
+        tool: {
+            name: "canvas_bulk_update_assignment_due_date_by_query",
+            description: "Update due date in bulk for assignments matched by query terms in assignment name",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
+                    query_terms: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "All terms must appear in assignment name (case-insensitive)"
+                    },
+                    due_at: {
+                        type: "string",
+                        description: "ISO-8601 due date to apply (e.g., 2026-02-12T23:59:00-05:00)"
+                    },
+                    limit: {
+                        type: "number",
+                        description: "Max assignments to process (default 20, max 100)"
+                    },
+                    dry_run: {
+                        type: "boolean",
+                        description: "If true, show matches without applying updates"
+                    }
+                },
+                required: ["course_id", "query_terms", "due_at"]
+            }
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                query_terms: z.array(z.string()).min(1),
+                due_at: z.string(),
+                limit: z.coerce.number().optional(),
+                dry_run: z.boolean().optional()
+            }).parse(args);
+
+            const courseId = await resolveCourseId(client, input.course_id);
+            const terms = input.query_terms.map((t) => t.toLowerCase().trim()).filter(Boolean);
+            const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
+            const dryRun = input.dry_run === true;
+
+            const assignments = await client.getAssignments(courseId);
+            const matched = assignments
+                .filter((a) => {
+                    const name = (a.name || "").toLowerCase();
+                    return terms.every((term) => name.includes(term));
+                })
+                .slice(0, limit);
+
+            const results: any[] = [];
+            for (const assignment of matched) {
+                if (!assignment.id) continue;
+                if (dryRun) {
+                    results.push({
+                        assignment_id: assignment.id,
+                        assignment_name: assignment.name,
+                        old_due_at: assignment.due_at ?? null,
+                        new_due_at: input.due_at,
+                        status: "matched_only"
+                    });
+                    continue;
+                }
+
+                try {
+                    const updated = await client.updateAssignmentDates(courseId, assignment.id, {
+                        due_at: input.due_at
+                    });
+                    results.push({
+                        assignment_id: updated.id ?? assignment.id,
+                        assignment_name: updated.name,
+                        old_due_at: assignment.due_at ?? null,
+                        new_due_at: updated.due_at ?? input.due_at,
+                        status: "updated"
+                    });
+                } catch (error: any) {
+                    results.push({
+                        assignment_id: assignment.id,
+                        assignment_name: assignment.name,
+                        old_due_at: assignment.due_at ?? null,
+                        new_due_at: input.due_at,
+                        status: "error",
+                        error: error?.message || "Unknown error"
+                    });
+                }
+            }
+
+            return {
+                content: [{
+                    type: "text",
+                    text: JSON.stringify({
+                        course_id: courseId,
+                        matched_count: matched.length,
+                        updated_count: results.filter((r) => r.status === "updated").length,
+                        dry_run: dryRun,
+                        results
+                    }, null, 2)
+                }],
             };
         }
     }
