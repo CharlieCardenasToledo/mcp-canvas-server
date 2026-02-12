@@ -151,7 +151,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
 
     app.get("/health", async () => ({ ok: true }));
 
-    app.get("/openapi.json", async () => app.swagger());
+    app.get("/openapi.json", async () => buildOpenApiSpec());
 
     app.get("/courses", async () => {
         return client.getCourses();
