@@ -1,0 +1,58 @@
+{
+    "name": "@charlie.act7/canvas-mcp-server",
+    "publishConfig": {
+        "access": "public"
+    },
+    "version": "1.0.0",
+    "description": "MCP Server for Canvas LMS - Use AI to interact with your courses, assignments, and grades.",
+    "main": "dist/index.js",
+    "bin": {
+        "canvas-mcp": "./dist/index.js"
+    },
+    "type": "module",
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "start:http": "node dist/index.js serve-http",
+        "dev": "tsc --watch",
+        "chat": "tsx src/ollama_bridge.ts",
+        "prepublishOnly": "npm run build"
+    },
+    "keywords": [
+        "mcp",
+        "canvas",
+        "lms",
+        "ai",
+        "agent",
+        "server"
+    ],
+    "author": "Antigravity User",
+    "license": "MIT",
+    "dependencies": {
+        "@fastify/swagger": "^9.5.2",
+        "@fastify/swagger-ui": "^5.2.3",
+        "@modelcontextprotocol/sdk": "^1.25.3",
+        "axios": "^1.6.0",
+        "chalk": "^5.3.0",
+        "commander": "^11.1.0",
+        "conf": "^12.0.0",
+        "dotenv": "^16.3.1",
+        "fastify": "^5.6.1",
+        "inquirer": "^9.2.12",
+        "zod": "^3.22.4"
+    },
+    "devDependencies": {
+        "@types/inquirer": "^9.0.7",
+        "@types/node": "^20.10.0",
+        "nodemon": "^3.1.11",
+        "tsx": "^4.21.0",
+        "typescript": "^5.3.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  canvas-mcp:
+    build: .
+    environment:
+      - CANVAS_API_TOKEN=${CANVAS_API_TOKEN}
+      - CANVAS_API_DOMAIN=${CANVAS_API_DOMAIN}
+    volumes:
+      - ./dist:/app/dist # Optional: for debugging built output
+    stdin_open: true # Required for stdio interaction
+    tty: true # Required for stdio interaction
