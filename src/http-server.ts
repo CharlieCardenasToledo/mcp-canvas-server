@@ -53,13 +53,37 @@ function buildOpenApiSpec(): any {
             "/courses/{courseId}/assignments": {
                 get: {
                     operationId: "listAssignments",
-                    summary: "List course assignments",
+                    summary: "List course assignments (compact by default to avoid large responses)",
                     parameters: [
                         {
                             name: "courseId",
                             in: "path",
                             required: true,
                             schema: { type: "integer" }
+                        },
+                        {
+                            name: "search",
+                            in: "query",
+                            required: false,
+                            schema: { type: "string" }
+                        },
+                        {
+                            name: "limit",
+                            in: "query",
+                            required: false,
+                            schema: { type: "integer", default: 50, minimum: 1, maximum: 200 }
+                        },
+                        {
+                            name: "upcomingOnly",
+                            in: "query",
+                            required: false,
+                            schema: { type: "boolean", default: false }
+                        },
+                        {
+                            name: "full",
+                            in: "query",
+                            required: false,
+                            schema: { type: "boolean", default: false }
                         }
                     ],
                     responses: {
@@ -178,9 +202,42 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         return client.getCourses();
     });
 
-    app.get<{ Params: { courseId: string } }>("/courses/:courseId/assignments", async (request) => {
+    app.get<{
+        Params: { courseId: string };
+        Querystring: { search?: string; limit?: string; upcomingOnly?: string; full?: string };
+    }>("/courses/:courseId/assignments", async (request) => {
         const courseId = Number.parseInt(request.params.courseId, 10);
-        return client.getAssignments(courseId);
+        const search = (request.query.search || "").toLowerCase().trim();
+        const upcomingOnly = request.query.upcomingOnly === "true";
+        const full = request.query.full === "true";
+
+        const requestedLimit = Number.parseInt(request.query.limit || "50", 10);
+        const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 200) : 50;
+
+        const assignments = await client.getAssignments(courseId);
+        const now = new Date();
+
+        const filtered = assignments.filter((a) => {
+            const matchesSearch = !search || (a.name || "").toLowerCase().includes(search);
+            if (!matchesSearch) return false;
+            if (!upcomingOnly) return true;
+            if (!a.due_at) return false;
+            return new Date(a.due_at) >= now;
+        });
+
+        if (full) {
+            return filtered.slice(0, limit);
+        }
+
+        return filtered.slice(0, limit).map((a) => ({
+            id: a.id ?? null,
+            name: a.name,
+            due_at: a.due_at ?? null,
+            unlock_at: a.unlock_at ?? null,
+            lock_at: a.lock_at ?? null,
+            points_possible: a.points_possible ?? null,
+            published: a.published ?? null
+        }));
     });
 
     app.get<{ Params: { courseId: string; assignmentId: string } }>(
