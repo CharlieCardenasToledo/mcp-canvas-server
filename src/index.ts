@@ -173,7 +173,7 @@ program
     .command("serve-http")
     .description("Start HTTP API (Fastify) for GPT Builder Actions")
     .option("--host <host>", "Host to bind", process.env.HTTP_HOST || "0.0.0.0")
-    .option("--port <port>", "Port to bind", process.env.HTTP_PORT || "3000")
+    .option("--port <port>", "Port to bind", process.env.PORT || process.env.HTTP_PORT || "3000")
     .action(async (options: { host: string; port: string }) => {
         const client = getClient();
         const port = Number.parseInt(options.port, 10);
