@@ -28,6 +28,17 @@ function buildOpenApiSpec(): any {
                     }
                 }
             },
+            "/privacy": {
+                get: {
+                    operationId: "getPrivacyPolicy",
+                    summary: "Privacy policy",
+                    responses: {
+                        "200": {
+                            description: "Privacy policy text"
+                        }
+                    }
+                }
+            },
             "/courses": {
                 get: {
                     operationId: "listCourses",
@@ -150,6 +161,16 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
     });
 
     app.get("/health", async () => ({ ok: true }));
+    app.get("/privacy", async () => ({
+        service: "Canvas MCP HTTP API",
+        effective_date: "2026-02-12",
+        summary: [
+            "This service processes Canvas API data strictly to fulfill user requests.",
+            "Canvas API tokens are provided via environment variables and are not exposed in API responses.",
+            "Do not send sensitive data beyond what is required for course operations."
+        ],
+        contact: "Set a maintainer contact before production use."
+    }));
 
     app.get("/openapi.json", async () => buildOpenApiSpec());
 
