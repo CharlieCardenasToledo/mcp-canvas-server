@@ -19,31 +19,6 @@ export const courseTools: ToolDefinition[] = [
         }
     },
     {
-        name: "canvas_list_modules",
-        tool: {
-            name: "canvas_list_modules",
-            description: "List modules and their items for a specific course",
-            inputSchema: {
-                type: "object",
-                properties: {
-                    course_id: {
-                        anyOf: [{ type: "number" }, { type: "string" }],
-                        description: "The ID or name of the course"
-                    },
-                },
-                required: ["course_id"],
-            },
-        },
-        handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
-            const courseId = await resolveCourseId(client, input.course_id);
-            const modules = await client.getModules(courseId);
-            return {
-                content: [{ type: "text", text: JSON.stringify(modules, null, 2) }],
-            };
-        }
-    },
-    {
         name: "canvas_list_pages",
         tool: {
             name: "canvas_list_pages",

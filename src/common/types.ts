@@ -92,6 +92,23 @@ export interface FileAttachment {
     preview_url?: string;
 }
 
+export interface Folder {
+    id: number;
+    name: string;
+    full_name: string;
+    context_id: number;
+    context_type: string;
+    parent_folder_id?: number;
+    created_at: string;
+    updated_at: string;
+    folders_url: string;
+    files_url: string;
+    files_count: number;
+    folders_count: number;
+    hidden?: boolean;
+    locked?: boolean;
+}
+
 export interface SubmissionComment {
     id: number;
     author_id: number;
@@ -238,4 +255,83 @@ export interface DiscussionEntry {
     created_at: string;
     updated_at?: string;
     parent_id?: number | null;
+}
+
+export interface QuizQuestionAnswer {
+    id?: number;
+    text: string;
+    weight: number;
+    comments?: string;
+}
+
+export interface QuizQuestion {
+    id: number;
+    quiz_id: number;
+    position: number;
+    question_name: string;
+    question_type: string;
+    question_text: string;
+    points_possible: number;
+    quiz_group_id: number | null;
+    answers: QuizQuestionAnswer[];
+}
+
+export interface QuizGroup {
+    id: number;
+    quiz_id: number;
+    name: string;
+    pick_count: number;
+    question_points: number;
+    assessment_question_bank_id?: number;
+}
+
+export interface GroupCategory {
+    id: number;
+    name: string;
+    role: string | null;
+    self_signup: string | null;
+    group_limit: number | null;
+    auto_leader: string | null;
+    context_type: string;
+    account_id: number;
+}
+
+export interface Group {
+    id: number;
+    name: string;
+    description: string | null;
+    is_public: boolean;
+    followed_by_user: boolean;
+    join_level: string;
+    members_count: number;
+    avatar_url: string | null;
+    context_type: string;
+    course_id: number | null;
+    role: string | null;
+    group_category_id: number | null;
+    sis_group_id: string | null;
+    storage_quota_mb: number;
+}
+
+export interface AppointmentGroup {
+    id: number;
+    title: string;
+    description?: string;
+    location_name?: string;
+    location_address?: string;
+    context_codes?: string[];
+    sub_context_codes?: string[];
+    workflow_state?: 'active' | 'deleted';
+    require_interaction?: boolean;
+    participants_per_appointment?: number;
+    min_appointments_per_participant?: number;
+    max_appointments_per_participant?: number;
+    new_appointments?: [string, string][];
+    calendar_events?: any[];
+    url?: string;
+    html_url?: string;
+    created_at?: string;
+    updated_at?: string;
+    participant_visibility?: 'private' | 'protected';
+    participant_type?: 'User' | 'Group';
 }

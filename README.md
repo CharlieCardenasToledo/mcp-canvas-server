@@ -1,60 +1,13 @@
 # Canvas MCP Server
 
-A Model Context Protocol (MCP) server for Canvas LMS. This server allows AI agents to interact with your Canvas courses, assignments, submissions, pages, files, and announcements.
+[![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Features
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for **Canvas LMS**. Lets AI agents (Claude, etc.) interact with your courses, assignments, grades, quizzes, modules, files, and more — all through natural language.
 
-- **Tools**:
-  - `canvas_list_courses`: List active courses.
-  - `canvas_list_modules`: List modules and items.
-  - `canvas_list_pages` / `canvas_get_page_content`: Read course pages.
-  - `canvas_list_files`: List course files.
-  - `canvas_list_announcements`: Read announcements.
-  - `canvas_get_assignments` / `canvas_get_submissions`: Manage coursework.
-  - `canvas_grade_submission`: Grade students (individual or bulk).
-  - `canvas_audit_course`: Check for missing submissions.
-- **Resources**:
-  - `canvas://courses/{id}/readme`: Get a summary of the course.
-  - `canvas://courses/{id}/pages/{slug}`: Read a specific page directly.
+## Quick Start (Claude Desktop / Claude Code)
 
-## Setup
-
-1.  **Get your credentials**:
-    - Canvas Domain (e.g., `uide.instructure.com`)
-    - API Token (Account -> Settings -> New Access Token)
-
-2.  **Configure Environment**:
-    Copy `.env.example` to `.env` and fill in your details:
-    ```bash
-    cp .env.example .env
-    ```
-    Edit `.env`:
-    ```env
-    CANVAS_API_TOKEN=your_token_here
-    CANVAS_API_DOMAIN=your_school.instructure.com
-    ```
-
-## Usage
-
-### Option 1: Docker (Recommended)
-
-Build and run the container:
-
-```bash
-# Build the image
-docker compose build
-
-# Run in detached mode
-docker compose up -d
-
-# View logs
-docker compose logs -f
-```
-
-**Note**: The Docker container uses `stdin/stdout` for communication, so "running" it like a service isn't how you typically connect an MCP client *unless* using a bridge. 
-
-**For MCP Clients (Claude Desktop, etc.)**:
-You usually run the docker command *directly* in your config.
+### Option 1: npx (recommended — no install needed)
 
 Add this to your `claude_desktop_config.json`:
 
@@ -62,69 +15,103 @@ Add this to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "canvas": {
+      "command": "npx",
+      "args": ["-y", "@charlie.act7/canvas-mcp-server"],
+      "env": {
+        "CANVAS_API_TOKEN": "your_token_here",
+        "CANVAS_API_DOMAIN": "your_school.instructure.com"
+      }
+    }
+  }
+}
+```
+
+### Option 2: Docker
+
+```json
+{
+  "mcpServers": {
+    "canvas": {
       "command": "docker",
       "args": [
-        "run",
-        "-i",
-        "--rm",
+        "run", "-i", "--rm",
         "-e", "CANVAS_API_TOKEN=your_token_here",
         "-e", "CANVAS_API_DOMAIN=your_school.instructure.com",
-        "canvas-mcp"
+        "charliecardenas/canvas-mcp"
       ]
     }
   }
 }
 ```
-*Note: You must build the image first (`docker build -t canvas-mcp .`).*
 
-### Option 2: Running Locally (Node.js)
+> **Note:** Build the image first: `docker build -t charliecardenas/canvas-mcp .`
 
-```bash
-# Install dependencies
-npm install
+## Getting Your Canvas Credentials
 
-# Build the project
-npm run build
+1. Log in to Canvas
+2. Go to **Account → Settings**
+3. Scroll to **Approved Integrations** → click **New Access Token**
+4. Copy the token — you won't see it again
 
-# Start the server
-npm start
-```
+Your domain is the hostname of your Canvas instance (e.g. `uide.instructure.com`).
 
-### Option 3: HTTP API for GPT Builder (Fastify + Swagger)
+## Available Tools
 
-Use this mode when you want OpenAPI/REST for Custom GPT Actions.
-
-```bash
-# Install dependencies
-npm install
-
-# Build project
-npm run build
-
-# Start HTTP API
-npm run start:http
-```
-
-By default it runs on `http://localhost:3000`:
-- Swagger UI: `http://localhost:3000/docs`
-- OpenAPI JSON: `http://localhost:3000/openapi.json`
-
-### Deploy on Render
-
-This repo includes `render.yaml` for one-click setup as a Web Service.
-
-Required environment variables in Render:
-- `CANVAS_API_TOKEN`
-- `CANVAS_API_DOMAIN` (example: `your-school.instructure.com`)
-
-Render will:
-- Build with `npm install && npm run build`
-- Start with `npm run start:http`
-- Check health on `/health`
+| Category | Tools |
+|---|---|
+| **Courses** | `canvas_list_courses`, `set_canvas_config` |
+| **Modules** | `canvas_list_modules` |
+| **Pages** | `canvas_list_pages`, `canvas_get_page_content` |
+| **Files** | `canvas_list_files` |
+| **Announcements** | `canvas_list_announcements` |
+| **Assignments** | `canvas_get_assignments`, `canvas_get_submissions` |
+| **Grading** | `canvas_grade_submission`, `canvas_audit_course` |
+| **Quizzes** | Quiz listing and question management |
+| **Students** | Student roster and progress |
+| **Groups** | Group management |
+| **Calendar** | Calendar events |
+| **Rubrics** | Rubric creation and management |
+| **Create** | Create assignments, pages, announcements |
+| **Communication** | Messaging and discussions |
 
 ## Resources
 
-You can "read" Canvas content directly if your AI client supports resources:
+MCP clients that support resources can access Canvas content directly:
 
-- `canvas://courses/123/readme` -> Returns course summary.
-- `canvas://courses/123/pages/my-page-url` -> Returns page HTML content.
+- `canvas://courses/{id}/readme` — Course summary
+- `canvas://courses/{id}/pages/{slug}` — Page HTML content
+
+## Local Development
+
+```bash
+# Install dependencies
+npm install
+
+# Configure credentials interactively
+npx canvas-mcp config
+
+# Build
+npm run build
+
+# Start MCP server (stdio)
+npm start
+
+# Start HTTP API (for GPT Builder / OpenAPI)
+npm run start:http
+```
+
+The HTTP server runs on `http://localhost:3000`:
+- Swagger UI: `http://localhost:3000/docs`
+- OpenAPI JSON: `http://localhost:3000/openapi.json`
+
+## Deploy on Render
+
+This repo includes `render.yaml` for one-click deploy as a Web Service.
+
+Required environment variables:
+- `CANVAS_API_TOKEN`
+- `CANVAS_API_DOMAIN` (e.g. `your-school.instructure.com`)
+
+## License
+
+MIT © Charlie Cárdenas Toledo
