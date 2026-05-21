@@ -25,6 +25,14 @@ import { quizTools } from "./tools/quiz-tools.js";
 import { gradingTools } from "./tools/grading-tools.js";
 import { communicationTools } from "./tools/communication-tools.js";
 import { studentTools } from "./tools/student-tools.js";
+import { quizQuestionTools } from "./tools/quiz-question-tools.js";
+import { createTools } from "./tools/create-tools.js";
+import { moduleTools } from "./tools/module-tools.js";
+import { fileTools } from "./tools/file-tools.js";
+import { configTools } from "./tools/config-tools.js";
+import { rubricTools } from "./tools/rubric-tools.js";
+import { calendarTools } from "./tools/calendar-tools.js";
+import { groupTools } from "./tools/group-tools.js";
 import { canvasResources } from "./resources/canvas-resources.js";
 import { canvasPrompts } from "./prompts/canvas-prompts.js";
 import { ToolDefinition } from "./common/tool-model.js";
@@ -116,7 +124,15 @@ program
             ...quizTools,
             ...gradingTools,
             ...communicationTools,
-            ...studentTools
+            ...studentTools,
+            ...quizQuestionTools,
+            ...createTools,
+            ...moduleTools,
+            ...fileTools,
+            ...configTools,
+            ...rubricTools,
+            ...calendarTools,
+            ...groupTools
         ];
 
         // --- Tool Handlers ---

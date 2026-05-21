@@ -257,6 +257,224 @@ function buildOpenApiSpec(): any {
                     }
                 }
             },
+            "/courses/{courseId}/quizzes/{quizId}/questions": {
+                get: {
+                    operationId: "listQuizQuestions",
+                    summary: "List all questions in a quiz",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    responses: {
+                        "200": {
+                            description: "Quiz questions list"
+                        }
+                    }
+                },
+                post: {
+                    operationId: "createQuizQuestion",
+                    summary: "Create a question in a quiz",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        question_name: { type: "string", description: "Question name/title" },
+                                        question_type: { type: "string", description: "e.g. multiple_choice_question, true_false_question, essay_question" },
+                                        question_text: { type: "string", description: "Question text (HTML)" },
+                                        points_possible: { type: "number", description: "Point value" },
+                                        quiz_group_id: { type: "integer", description: "Optional quiz group ID" },
+                                        answers: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    text: { type: "string" },
+                                                    weight: { type: "number" },
+                                                    comments: { type: "string" }
+                                                },
+                                                required: ["text", "weight"]
+                                            }
+                                        }
+                                    },
+                                    required: ["question_name", "question_type", "question_text", "points_possible"]
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        "201": {
+                            description: "Created quiz question"
+                        },
+                        "400": {
+                            description: "Invalid payload"
+                        }
+                    }
+                }
+            },
+            "/courses/{courseId}/quizzes/{quizId}/questions/{questionId}": {
+                put: {
+                    operationId: "updateQuizQuestion",
+                    summary: "Update a question in a quiz",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "questionId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        question_name: { type: "string" },
+                                        question_type: { type: "string" },
+                                        question_text: { type: "string" },
+                                        points_possible: { type: "number" },
+                                        quiz_group_id: { type: ["integer", "null"] },
+                                        answers: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    text: { type: "string" },
+                                                    weight: { type: "number" },
+                                                    comments: { type: "string" }
+                                                },
+                                                required: ["text", "weight"]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        "200": {
+                            description: "Updated quiz question"
+                        },
+                        "400": {
+                            description: "Invalid payload"
+                        }
+                    }
+                },
+                delete: {
+                    operationId: "deleteQuizQuestion",
+                    summary: "Delete a question from a quiz",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "questionId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    responses: {
+                        "200": {
+                            description: "Deletion result"
+                        }
+                    }
+                }
+            },
+            "/courses/{courseId}/quizzes/{quizId}/groups": {
+                post: {
+                    operationId: "createQuizGroup",
+                    summary: "Create a quiz group linked to a question bank",
+                    parameters: [
+                        {
+                            name: "courseId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        },
+                        {
+                            name: "quizId",
+                            in: "path",
+                            required: true,
+                            schema: { type: "integer" }
+                        }
+                    ],
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        name: { type: "string", description: "Group name" },
+                                        pick_count: { type: "integer", description: "Number of questions to pick" },
+                                        question_points: { type: "number", description: "Points per question" },
+                                        assessment_question_bank_id: { type: "integer", description: "Question bank to link" }
+                                    },
+                                    required: ["name", "pick_count", "question_points"]
+                                }
+                            }
+                        }
+                    },
+                    responses: {
+                        "201": {
+                            description: "Created quiz group"
+                        },
+                        "400": {
+                            description: "Invalid payload"
+                        }
+                    }
+                }
+            },
             "/courses/{courseId}/assignments/bulk-due-date": {
                 patch: {
                     operationId: "bulkUpdateAssignmentDueDateByQuery",
@@ -439,6 +657,107 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             unlock_at,
             lock_at
         });
+    });
+
+    // --- Quiz Questions ---
+
+    app.get<{ Params: { courseId: string; quizId: string } }>(
+        "/courses/:courseId/quizzes/:quizId/questions",
+        async (request) => {
+            const courseId = Number.parseInt(request.params.courseId, 10);
+            const quizId = Number.parseInt(request.params.quizId, 10);
+            return client.listQuizQuestions(courseId, quizId);
+        }
+    );
+
+    app.post<{
+        Params: { courseId: string; quizId: string };
+        Body: {
+            question_name?: string;
+            question_type?: string;
+            question_text?: string;
+            points_possible?: number;
+            quiz_group_id?: number;
+            answers?: { text: string; weight: number; comments?: string }[];
+        };
+    }>("/courses/:courseId/quizzes/:quizId/questions", async (request, reply) => {
+        const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } = request.body || {};
+        if (!question_name || !question_type || !question_text || points_possible === undefined) {
+            return reply.code(400).send({
+                error: "question_name, question_type, question_text and points_possible are required."
+            });
+        }
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const quizId = Number.parseInt(request.params.quizId, 10);
+        const question = await client.createQuizQuestion(courseId, quizId, {
+            question_name,
+            question_type,
+            question_text,
+            points_possible,
+            quiz_group_id,
+            answers
+        });
+        return reply.code(201).send(question);
+    });
+
+    app.put<{
+        Params: { courseId: string; quizId: string; questionId: string };
+        Body: {
+            question_name?: string;
+            question_type?: string;
+            question_text?: string;
+            points_possible?: number;
+            quiz_group_id?: number | null;
+            answers?: { text: string; weight: number; comments?: string }[];
+        };
+    }>("/courses/:courseId/quizzes/:quizId/questions/:questionId", async (request) => {
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const quizId = Number.parseInt(request.params.quizId, 10);
+        const questionId = Number.parseInt(request.params.questionId, 10);
+        const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } = request.body || {};
+        const data: any = {};
+        if (question_name !== undefined) data.question_name = question_name;
+        if (question_type !== undefined) data.question_type = question_type;
+        if (question_text !== undefined) data.question_text = question_text;
+        if (points_possible !== undefined) data.points_possible = points_possible;
+        if (quiz_group_id !== undefined) data.quiz_group_id = quiz_group_id;
+        if (answers !== undefined) data.answers = answers;
+        return client.updateQuizQuestion(courseId, quizId, questionId, data);
+    });
+
+    app.delete<{
+        Params: { courseId: string; quizId: string; questionId: string };
+    }>("/courses/:courseId/quizzes/:quizId/questions/:questionId", async (request) => {
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const quizId = Number.parseInt(request.params.quizId, 10);
+        const questionId = Number.parseInt(request.params.questionId, 10);
+        return client.deleteQuizQuestion(courseId, quizId, questionId);
+    });
+
+    app.post<{
+        Params: { courseId: string; quizId: string };
+        Body: {
+            name?: string;
+            pick_count?: number;
+            question_points?: number;
+            assessment_question_bank_id?: number;
+        };
+    }>("/courses/:courseId/quizzes/:quizId/groups", async (request, reply) => {
+        const { name, pick_count, question_points, assessment_question_bank_id } = request.body || {};
+        if (!name || pick_count === undefined || question_points === undefined) {
+            return reply.code(400).send({
+                error: "name, pick_count and question_points are required."
+            });
+        }
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const quizId = Number.parseInt(request.params.quizId, 10);
+        const group = await client.createQuizGroup(courseId, quizId, {
+            name,
+            pick_count,
+            question_points,
+            assessment_question_bank_id
+        });
+        return reply.code(201).send(group);
     });
 
     app.patch<{

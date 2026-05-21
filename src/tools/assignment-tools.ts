@@ -106,10 +106,35 @@ export const assignmentTools: ToolDefinition[] = [
             return {
                 content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
             };
-        }
-    },
-    {
-        name: "canvas_get_submissions",
+            }
+            },
+            {
+            name: "canvas_list_assignment_groups",
+            tool: {
+            name: "canvas_list_assignment_groups",
+            description: "List all assignment groups in a course",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
+                },
+                required: ["course_id"],
+            },
+            },
+            handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
+            const courseId = await resolveCourseId(client, input.course_id);
+            const groups = await client.getAssignmentGroups(courseId);
+            return {
+                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }],
+            };
+            }
+            },
+            {
+            name: "canvas_get_submissions",
         tool: {
             name: "canvas_get_submissions",
             description: "Get submissions for a specific assignment in a course",
@@ -389,6 +414,218 @@ export const assignmentTools: ToolDefinition[] = [
                         results
                     }, null, 2)
                 }],
+            };
+        }
+    },
+    {
+        name: "canvas_create_assignment",
+        tool: {
+            name: "canvas_create_assignment",
+            description: "Create a new assignment for a course",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
+                    name: {
+                        type: "string",
+                        description: "The name of the assignment (required)"
+                    },
+                    description: {
+                        type: "string",
+                        description: "The assignment's description, supports HTML"
+                    },
+                    submission_types: {
+                        type: "array",
+                        items: {
+                            type: "string",
+                            enum: ["online_upload", "online_text_entry", "online_url", "media_recording", "student_annotation", "online_quiz", "none", "on_paper", "discussion_topic", "external_tool"]
+                        },
+                        description: "List of supported submission types"
+                    },
+                    points_possible: {
+                        type: "number",
+                        description: "The maximum points possible on the assignment"
+                    },
+                    grading_type: {
+                        type: "string",
+                        enum: ["pass_fail", "percent", "letter_grade", "gpa_scale", "points", "not_graded"],
+                        description: "The strategy used for grading the assignment"
+                    },
+                    due_at: {
+                        type: "string",
+                        description: "The day/time the assignment is due (ISO 8601)"
+                    },
+                    lock_at: {
+                        type: "string",
+                        description: "The day/time the assignment is locked after (ISO 8601)"
+                    },
+                    unlock_at: {
+                        type: "string",
+                        description: "The day/time the assignment is unlocked (ISO 8601)"
+                    },
+                    assignment_group_id: {
+                        type: "number",
+                        description: "The assignment group id to put the assignment in"
+                    },
+                    published: {
+                        type: "boolean",
+                        description: "Whether this assignment is published"
+                    },
+                    allowed_extensions: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Allowed extensions if submission_types includes 'online_upload'"
+                    }
+                },
+                required: ["course_id", "name"]
+            },
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                name: z.string(),
+                description: z.string().optional(),
+                submission_types: z.array(z.string()).optional(),
+                points_possible: z.number().optional(),
+                grading_type: z.string().optional(),
+                due_at: z.string().optional(),
+                lock_at: z.string().optional(),
+                unlock_at: z.string().optional(),
+                assignment_group_id: z.number().optional(),
+                published: z.boolean().optional(),
+                allowed_extensions: z.array(z.string()).optional()
+            }).parse(args);
+
+            const courseId = await resolveCourseId(client, input.course_id);
+            const assignmentData: any = {
+                name: input.name
+            };
+
+            if (input.description !== undefined) assignmentData.description = input.description;
+            if (input.submission_types !== undefined) assignmentData.submission_types = input.submission_types;
+            if (input.points_possible !== undefined) assignmentData.points_possible = input.points_possible;
+            if (input.grading_type !== undefined) assignmentData.grading_type = input.grading_type;
+            if (input.due_at !== undefined) assignmentData.due_at = input.due_at;
+            if (input.lock_at !== undefined) assignmentData.lock_at = input.lock_at;
+            if (input.unlock_at !== undefined) assignmentData.unlock_at = input.unlock_at;
+            if (input.assignment_group_id !== undefined) assignmentData.assignment_group_id = input.assignment_group_id;
+            if (input.published !== undefined) assignmentData.published = input.published;
+            if (input.allowed_extensions !== undefined) assignmentData.allowed_extensions = input.allowed_extensions;
+
+            const assignment = await client.createAssignment(courseId, assignmentData);
+
+            return {
+                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
+            };
+        }
+    },
+    {
+        name: "canvas_update_assignment",
+        tool: {
+            name: "canvas_update_assignment",
+            description: "Update an existing assignment",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
+                    assignment_id: {
+                        type: "number",
+                        description: "The ID of the assignment to update"
+                    },
+                    name: {
+                        type: "string",
+                        description: "The name of the assignment"
+                    },
+                    description: {
+                        type: "string",
+                        description: "The assignment's description, supports HTML"
+                    },
+                    submission_types: {
+                        type: "array",
+                        items: {
+                            type: "string",
+                            enum: ["online_upload", "online_text_entry", "online_url", "media_recording", "student_annotation", "online_quiz", "none", "on_paper", "discussion_topic", "external_tool"]
+                        },
+                        description: "List of supported submission types"
+                    },
+                    points_possible: {
+                        type: "number",
+                        description: "The maximum points possible on the assignment"
+                    },
+                    grading_type: {
+                        type: "string",
+                        enum: ["pass_fail", "percent", "letter_grade", "gpa_scale", "points", "not_graded"],
+                        description: "The strategy used for grading the assignment"
+                    },
+                    due_at: {
+                        type: "string",
+                        description: "The day/time the assignment is due (ISO 8601)"
+                    },
+                    lock_at: {
+                        type: "string",
+                        description: "The day/time the assignment is locked after (ISO 8601)"
+                    },
+                    unlock_at: {
+                        type: "string",
+                        description: "The day/time the assignment is unlocked (ISO 8601)"
+                    },
+                    assignment_group_id: {
+                        type: "number",
+                        description: "The assignment group id to put the assignment in"
+                    },
+                    published: {
+                        type: "boolean",
+                        description: "Whether this assignment is published"
+                    },
+                    allowed_extensions: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Allowed extensions if submission_types includes 'online_upload'"
+                    }
+                },
+                required: ["course_id", "assignment_id"]
+            },
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                assignment_id: z.coerce.number(),
+                name: z.string().optional(),
+                description: z.string().optional(),
+                submission_types: z.array(z.string()).optional(),
+                points_possible: z.number().optional(),
+                grading_type: z.string().optional(),
+                due_at: z.string().optional(),
+                lock_at: z.string().optional(),
+                unlock_at: z.string().optional(),
+                assignment_group_id: z.number().optional(),
+                published: z.boolean().optional(),
+                allowed_extensions: z.array(z.string()).optional()
+            }).parse(args);
+
+            const courseId = await resolveCourseId(client, input.course_id);
+            const assignment = await client.updateAssignment(courseId, input.assignment_id, {
+                name: input.name,
+                description: input.description,
+                submission_types: input.submission_types,
+                points_possible: input.points_possible,
+                grading_type: input.grading_type,
+                due_at: input.due_at,
+                lock_at: input.lock_at,
+                unlock_at: input.unlock_at,
+                assignment_group_id: input.assignment_group_id,
+                published: input.published,
+                allowed_extensions: input.allowed_extensions
+            });
+
+            return {
+                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
             };
         }
     }
