@@ -8,11 +8,31 @@ Dockerfile
 render.yaml
 AGENTS.md
 tsconfig.json
+node_modules/
+npm-debug.log*
+
+# Root-level scripts and test files (not part of the package)
 *.ts
-*.js
 find_assignment.js
 create_taller.ts
 update_group.ts
 test_modules.ts
-node_modules/
-npm-debug.log*
+
+# Compiled test/utility files that are not part of the MCP server
+dist/audit_future_tasks.js
+dist/canvas-client.js
+dist/check_assignment_553247.js
+dist/check_fabian.js
+dist/check_pending.js
+dist/config-manager.js
+dist/find_middleware.js
+dist/grade_missing.js
+dist/grade_student.js
+dist/list_my_courses.js
+dist/ollama_bridge.js
+dist/test_ollama_flow.js
+dist/test_students.js
+dist/test_submission.js
+dist/test-connection.js
+dist/types.js
+dist/view_submission.js

@@ -7,11 +7,17 @@
     "description": "MCP Server for Canvas LMS - Use AI to interact with your courses, assignments, and grades.",
     "main": "dist/index.js",
     "bin": {
-        "canvas-mcp": "./dist/index.js"
+        "canvas-mcp": "dist/index.js"
     },
     "type": "module",
     "files": [
-        "dist",
+        "dist/index.js",
+        "dist/http-server.js",
+        "dist/common",
+        "dist/prompts",
+        "dist/resources",
+        "dist/services",
+        "dist/tools",
         "README.md"
     ],
     "scripts": {
