@@ -3,13 +3,26 @@
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Bring AI to your Canvas Virtual Classroom!** 🚀
+Bring AI to your Canvas Virtual Classroom! 🚀
 
-This project is a **Model Context Protocol (MCP)** server for **Canvas LMS**. In simple terms, it acts as a "translator" or bridge that allows AI assistants (like Claude Desktop, Claude Code, Cursor, etc.) to understand and perform actions in your Canvas courses using natural language.
+This project is a **Model Context Protocol (MCP)** server for **Canvas LMS**. It acts as a bridge that allows AI assistants (like Claude Desktop, Claude Code, Cursor, etc.) to query and manage your Canvas courses using natural language.
 
 ---
 
-## 🔍 How It Works
+## Table of Contents
+- [How It Works](#how-it-works)
+- [Use Cases & Examples](#use-cases--examples)
+- [Setup Guide](#setup-guide)
+  - [Step 1: Obtain Canvas Credentials](#step-1-obtain-canvas-credentials)
+  - [Step 2: Connect to your AI Client](#step-2-connect-to-your-ai-client)
+- [CLI Configuration](#cli-configuration)
+- [Supported Tools & Resources](#supported-tools--resources)
+- [Local Development](#local-development)
+- [License](#license)
+
+---
+
+## How It Works
 
 When you interact with the server, communication flows as follows:
 
@@ -23,19 +36,19 @@ graph LR
     AI -->|Friendly Answer| User
 ```
 
-1. **You ask Claude for something** (e.g., *"Create an assignment due next Friday"*).
-2. **Claude detects your intent** and communicates with the **Canvas MCP Server**, sending the required parameters.
+1. **You ask the AI** (e.g., *"Create an assignment due next Friday"*).
+2. **The AI detects your intent** and communicates with the **Canvas MCP Server**, sending the required parameters.
 3. **The server makes a secure call** to the official Canvas API.
-4. **Canvas processes the action** and returns the result.
-5. **Claude confirms the success of the action** back to you in plain, natural language.
+4. **Canvas processes the action** and returns the response.
+5. **The AI confirms the success of the action** back to you in plain, natural language.
 
 ---
 
-## 💡 What Can You Ask Your Assistant?
+## Use Cases & Examples
 
-Anything you would normally do manually in Canvas! Here are some everyday examples:
+Here are some realistic, everyday prompts you can use with your AI assistant:
 
-### 📖 Querying Information & Course Auditing
+### 📖 Course Auditing & Querying
 * 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
 * 💬 *"Show me all ungraded submissions for 'PE-2.1: Sorting Algorithms' in Programming 101."*
 * 💬 *"Who is in Student Group B for the Physics class?"*
@@ -46,17 +59,17 @@ Anything you would normally do manually in Canvas! Here are some everyday exampl
 * 💬 *"Add a SubHeader 'LEARNING RESOURCES' inside the 'Week 4' module, and link the study materials page to it."*
 * 💬 *"In my Programming course, create an assignment called 'PE-2.1: Sorting Algorithms'. Add an instructions table with columns for Activity, Specific Instructions, and Deliverable."*
 
-### 💯 Grading, Feedback & Absence Management
+### 💯 Grading & Absence Management
 * 💬 *"For assignment 'PE-2.1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Student was absent. To recover this activity, please contact the instructor.'"*
 * 💬 *"Grade Maria's submission for 'PE-2.1' with a 90 based on the rubric, and add a comment: 'Great job! The analysis of sorting algorithms is correct, though the complexity analysis could be deeper. Keep it up!'"*
 
 ---
 
-## 🛠️ Step-by-Step Setup Guide
+## Setup Guide
 
 To connect your AI assistant to Canvas, you need to configure **two things**: your Canvas credentials and your AI client (like Claude).
 
-### Step 1: Obtain your Canvas credentials
+### Step 1: Obtain Canvas Credentials
 To let the server act on your behalf, it needs permission:
 1. Log in to your **Canvas LMS** account.
 2. Go to **Account** ➡️ **Settings** in the sidebar menu.
@@ -105,7 +118,7 @@ Then, configure your credentials interactively:
 
 ---
 
-## 💻 Interactive Console Configuration (CLI)
+## CLI Configuration
 If you prefer to configure your credentials locally for development, run:
 ```bash
 npx @charlie.act7/canvas-mcp-server config
@@ -114,8 +127,12 @@ This will guide you step-by-step to input your domain and API token, storing the
 
 ---
 
+## Supported Tools & Resources
+
 <details>
-<summary>🛠️ <b>View Detailed List of Supported Tools (Technical)</b></summary>
+<summary><b>View Detailed List of Supported Tools & Resources (Technical)</b></summary>
+
+### Tools List
 
 The server exposes the following tools organized by category:
 
@@ -144,7 +161,7 @@ For clients supporting direct resources:
 
 ---
 
-## 🛠️ Local Development (For Developers)
+## Local Development
 
 To clone this repository and modify the code:
 
@@ -169,5 +186,5 @@ To clone this repository and modify the code:
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the MIT License. Created by [Charlie Cárdenas Toledo](https://github.com/charlie-act7).
