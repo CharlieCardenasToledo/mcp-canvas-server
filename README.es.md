@@ -3,13 +3,26 @@
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**¡Lleva tu aula virtual de Canvas al siguiente nivel con Inteligencia Artificial!** 🚀
+¡Lleva tu aula virtual de Canvas al siguiente nivel con Inteligencia Artificial! 🚀
 
-Este proyecto es un servidor de **Model Context Protocol (MCP)** para **Canvas LMS**. En palabras sencillas, funciona como un "traductor" o puente que permite a asistentes de Inteligencia Artificial (como Claude Desktop, Claude Code, Cursor, etc.) comprender y realizar acciones en tus cursos de Canvas mediante instrucciones en lenguaje natural.
+Este proyecto es un servidor de **Model Context Protocol (MCP)** para **Canvas LMS**. Funciona como un puente que permite a asistentes de Inteligencia Artificial (como Claude Desktop, Claude Code, Cursor, etc.) consultar y administrar tus cursos de Canvas mediante instrucciones en lenguaje natural.
 
 ---
 
-## 🔍 ¿Cómo funciona?
+## Tabla de Contenidos
+- [¿Cómo funciona?](#cómo-funciona)
+- [Ejemplos de Uso](#ejemplos-de-uso)
+- [Guía de Instalación](#guía-de-instalación)
+  - [Paso 1: Obtener credenciales de Canvas](#paso-1-obtener-credenciales-de-canvas)
+  - [Paso 2: Configurar tu Cliente de IA](#paso-2-configurar-tu-cliente-de-ia)
+- [Configuración por Consola (CLI)](#configuración-por-consola-cli)
+- [Herramientas y Recursos Soportados](#herramientas-y-recursos-soportados)
+- [Desarrollo Local](#desarrollo-local)
+- [Licencia](#licencia)
+
+---
+
+## ¿Cómo funciona?
 
 Cuando utilizas este servidor, la comunicación fluye de la siguiente manera:
 
@@ -23,17 +36,17 @@ graph LR
     AI -->|Respuesta amigable| User
 ```
 
-1. **Tú le pides algo a Claude** (por ejemplo: *"Crea una tarea para el próximo viernes"*).
-2. **Claude detecta la intención** y se comunica con el **Canvas MCP Server** enviándole los parámetros necesarios.
+1. **Tú le pides algo al asistente** (por ejemplo: *"Crea una tarea para el próximo viernes"*).
+2. **El asistente detecta la intención** y se comunica con el **Canvas MCP Server** enviándole los parámetros necesarios.
 3. **El servidor realiza la llamada segura** a la API de Canvas.
 4. **Canvas procesa la acción** y devuelve el resultado.
-5. **Claude te confirma el éxito de la operación** en lenguaje natural.
+5. **El asistente te confirma el éxito de la operación** en lenguaje natural.
 
 ---
 
-## 💡 ¿Qué puedes pedirle a tu Asistente?
+## Ejemplos de Uso
 
-¡Cualquier tarea administrativa o de consulta que harías manualmente en Canvas! Aquí tienes algunos ejemplos de lo que puedes pedirle:
+Aquí tienes algunos ejemplos de consultas y acciones reales que puedes pedirle a tu asistente:
 
 ### 📖 Para Consultar Información y Auditar Cursos
 * 💬 *"¿Qué cursos tengo activos este semestre? Verifica si existen múltiples paralelos o secciones."*
@@ -52,11 +65,11 @@ graph LR
 
 ---
 
-## 🛠️ Guía de Instalación Paso a Paso
+## Guía de Instalación
 
 Para conectar tu asistente de IA a Canvas, necesitas configurar **dos cosas**: tus credenciales de Canvas y el cliente de IA (como Claude).
 
-### Paso 1: Obtener tus credenciales de Canvas LMS
+### Paso 1: Obtener credenciales de Canvas
 Para que el servidor pueda actuar en tu nombre, necesita permiso:
 1. Inicia sesión en tu cuenta de **Canvas LMS**.
 2. Dirígete a **Cuenta (Account)** ➡️ **Configuración (Settings)** en el menú lateral.
@@ -105,7 +118,7 @@ Luego, configura tus credenciales de forma interactiva:
 
 ---
 
-## 💻 Configuración Interactiva por Consola (CLI)
+## Configuración por Consola (CLI)
 Si prefieres configurar las credenciales de manera local e interactiva en tu terminal para desarrollo, puedes ejecutar:
 ```bash
 npx @charlie.act7/canvas-mcp-server config
@@ -114,8 +127,12 @@ Esto te pedirá el dominio y tu API token paso a paso, guardándolos de forma se
 
 ---
 
+## Herramientas y Recursos Soportados
+
 <details>
-<summary>🛠️ <b>Ver Lista Detallada de Herramientas Soportadas (Técnico)</b></summary>
+<summary><b>Ver Lista Detallada de Herramientas y Recursos Soportados (Técnico)</b></summary>
+
+### Lista de Herramientas
 
 El servidor expone internamente las siguientes herramientas organizadas por categorías:
 
@@ -144,7 +161,7 @@ Para clientes compatibles con recursos directos:
 
 ---
 
-## 🛠️ Desarrollo Local (Para Programadores)
+## Desarrollo Local
 
 Si deseas clonar este repositorio y hacer modificaciones:
 
@@ -169,5 +186,5 @@ Si deseas clonar este repositorio y hacer modificaciones:
 
 ---
 
-## 📄 Licencia
+## Licencia
 Este proyecto está bajo la licencia MIT. Creado por [Charlie Cárdenas Toledo](https://github.com/charlie-act7).
