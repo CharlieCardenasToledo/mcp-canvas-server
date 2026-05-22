@@ -53,18 +53,18 @@ Aquí tienes algunos ejemplos de consultas y acciones reales que puedes pedirle 
 
 ### 📖 Para Consultar Información y Auditar Cursos
 * 💬 *"¿Qué cursos tengo activos este semestre? Verifica si existen múltiples paralelos o secciones."*
-* 💬 *"Muéstrame las entregas pendientes de calificar para la actividad 'PE-2.1: Algoritmos de Ordenamiento' en Programación 101."*
-* 💬 *"¿Cuáles son los estudiantes registrados en el Grupo B de la clase de Física?"*
-* 💬 *"Verifica si la tarea 'PE-2.1' tiene una rúbrica activa asociada. Si es así, obtén sus criterios."*
+* 💬 *"Muéstrame las entregas pendientes de calificar para la actividad 'Ensayo 1: Introducción a la Sociología' en Sociología 101."*
+* 💬 *"¿Cuáles son los estudiantes registrados en el Grupo A de la clase de Química?"*
+* 💬 *"Verifica si la tarea 'Propuesta de Proyecto' tiene una rúbrica activa asociada. Si es así, obtén sus criterios."*
 
 ### ✍️ Para Administrar y Crear Contenido Académico
-* 💬 *"Crea un nuevo módulo llamado 'Semana 4: Estructuras de Datos' en mi curso."*
-* 💬 *"Agrega un subencabezado 'RECURSOS DE APRENDIZAJE' dentro del módulo 'Semana 4' y vincula la página de materiales de estudio."*
-* 💬 *"Crea una tarea llamada 'PE-2.1: Algoritmos de Ordenamiento' en mi curso. Añade una tabla de instrucciones con las columnas: Actividad, Instrucciones específicas y Entregable."*
+* 💬 *"Crea un nuevo módulo llamado 'Semana 1: Fundamentos' en mi curso."*
+* 💬 *"Agrega un Subencabezado 'LECTURAS OBLIGATORIAS' dentro del módulo 'Semana 1' y enlaza la página del sílabo."*
+* 💬 *"En mi curso de Negocios, crea una tarea llamada 'Estudio de Caso 1: Análisis de Mercado'. Agrega una tabla de instrucciones con columnas para Criterios, Requisitos y Puntaje."*
 
-### 💯 Para Calificar y Gestionar Inasistencias
-* 💬 *"Para la tarea 'PE-2.1', identifica a los estudiantes que no entregaron a tiempo. Asígnales una nota de 0 y deja el comentario: 'No asistió a clases. Si desea recuperar la actividad, debe enviar un correo al docente explicando el motivo.'"*
-* 💬 *"Califica la entrega de María en 'PE-2.1' con un 90 basado en la rúbrica y agrégale la retroalimentación: 'Buen trabajo, el análisis sobre ordenamiento es correcto. Se observa un buen desarrollo de la lógica. Sin embargo, faltó detallar el análisis de complejidad temporal.'"*
+### 💯 Gestión de Calificaciones y Asistencia
+* 💬 *"Para la tarea 'Estudio de Caso 1', busca a todos los estudiantes que no hayan entregado. Ponles un 0 de nota y agrégales el comentario: 'Actividad no entregada. Si tienes una justificación válida, por favor comunícate con el docente.'"*
+* 💬 *"Califica la entrega de Juan en 'Ensayo 1' con un 90 basado en la rúbrica, y agrega un comentario: '¡Excelente trabajo! El análisis está muy bien estructurado, aunque podrías profundizar un poco más en las conclusiones. ¡Sigue así!'"*
 
 ---
 
