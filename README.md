@@ -49,7 +49,7 @@ graph LR
 Here are some realistic, everyday prompts you can use with your AI assistant:
 
 > [!TIP]
-> **Token Saving & Efficiency:** Whenever possible, specify the Canvas ID or the direct Canvas URL (e.g., `https://uide.instructure.com/courses/35504/assignments/660061`) in your prompts. This prevents the AI from scanning all your courses/resources, leading to faster responses and substantial token savings.
+> **Token Saving & Efficiency:** Whenever possible, specify the Canvas ID or the direct Canvas URL (e.g., `https://[your_institution].instructure.com/courses/[course_id]/assignments/[assignment_id]`) in your prompts. This prevents the AI from scanning all your courses/resources, leading to faster responses and substantial token savings.
 
 ### 📖 Course Auditing & Querying
 * 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
