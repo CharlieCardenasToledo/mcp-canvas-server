@@ -53,18 +53,18 @@ Here are some realistic, everyday prompts you can use with your AI assistant:
 
 ### 📖 Course Auditing & Querying
 * 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
-* 💬 *"Show me all ungraded submissions for 'PE-2.1: Sorting Algorithms' in Programming 101."*
-* 💬 *"Who is in Student Group B for the Physics class?"*
-* 💬 *"Does the assignment 'PE-2.1' have an active rubric associated? If so, retrieve its criteria."*
+* 💬 *"Show me all ungraded submissions for 'Essay 1: Introduction to Sociology' in Sociology 101."*
+* 💬 *"Who is in Student Group A for the Chemistry class?"*
+* 💬 *"Does the assignment 'Project Proposal' have an active rubric associated? If so, retrieve its criteria."*
 
 ### ✍️ Creating & Organizing Course Content
-* 💬 *"Create a new module named 'Week 4: Data Structures' in my course."*
-* 💬 *"Add a SubHeader 'LEARNING RESOURCES' inside the 'Week 4' module, and link the study materials page to it."*
-* 💬 *"In my Programming course, create an assignment called 'PE-2.1: Sorting Algorithms'. Add an instructions table with columns for Activity, Specific Instructions, and Deliverable."*
+* 💬 *"Create a new module named 'Week 1: Foundations' in my course."*
+* 💬 *"Add a SubHeader 'REQUIRED READINGS' inside the 'Week 1' module, and link the syllabus page to it."*
+* 💬 *"In my Business course, create an assignment called 'Case Study 1: Market Analysis'. Add an instructions table with columns for Criteria, Requirements, and Points."*
 
 ### 💯 Grading & Absence Management
-* 💬 *"For assignment 'PE-2.1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Student was absent. To recover this activity, please contact the instructor.'"*
-* 💬 *"Grade Maria's submission for 'PE-2.1' with a 90 based on the rubric, and add a comment: 'Great job! The analysis of sorting algorithms is correct, though the complexity analysis could be deeper. Keep it up!'"*
+* 💬 *"For assignment 'Case Study 1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Activity not submitted. Please contact the instructor if you have a valid excuse.'"*
+* 💬 *"Grade John's submission for 'Essay 1' with a 90 based on the rubric, and add a comment: 'Great job! The analysis is well-structured, though you could expand more on the conclusion. Keep it up!'"*
 
 ---
 
