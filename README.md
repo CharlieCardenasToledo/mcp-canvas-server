@@ -1,13 +1,25 @@
-# Canvas MCP Server
+# Canvas LMS MCP Server
 
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for **Canvas LMS**. Lets AI agents (Claude, etc.) interact with your courses, assignments, grades, quizzes, modules, files, and more — all through natural language.
 
-## Quick Start (Claude Desktop / Claude Code)
+## Install as a Claude Code Plugin
 
-### Option 1: npx (recommended — no install needed)
+```
+/plugin install canvas-lms@claude-community
+```
+
+Then set your credentials:
+
+```
+/canvas-lms:config
+```
+
+Or set them as environment variables (see [Getting Your Canvas Credentials](#getting-your-canvas-credentials)).
+
+## Quick Start (Claude Desktop / other MCP clients)
 
 Add this to your `claude_desktop_config.json`:
 
@@ -26,26 +38,6 @@ Add this to your `claude_desktop_config.json`:
 }
 ```
 
-### Option 2: Docker
-
-```json
-{
-  "mcpServers": {
-    "canvas": {
-      "command": "docker",
-      "args": [
-        "run", "-i", "--rm",
-        "-e", "CANVAS_API_TOKEN=your_token_here",
-        "-e", "CANVAS_API_DOMAIN=your_school.instructure.com",
-        "charliecardenas/canvas-mcp"
-      ]
-    }
-  }
-}
-```
-
-> **Note:** Build the image first: `docker build -t charliecardenas/canvas-mcp .`
-
 ## Getting Your Canvas Credentials
 
 1. Log in to Canvas
@@ -53,26 +45,43 @@ Add this to your `claude_desktop_config.json`:
 3. Scroll to **Approved Integrations** → click **New Access Token**
 4. Copy the token — you won't see it again
 
-Your domain is the hostname of your Canvas instance (e.g. `uide.instructure.com`).
+Your domain is the hostname of your Canvas instance, e.g. `myschool.instructure.com`.
+
+| Variable | Example |
+|---|---|
+| `CANVAS_API_TOKEN` | `1234~abcdefg...` |
+| `CANVAS_API_DOMAIN` | `myschool.instructure.com` |
+
+## What You Can Do
+
+Ask Claude things like:
+
+- *"List all my active courses"*
+- *"Show me ungraded submissions for Assignment 3 in Biology 101"*
+- *"Grade María's essay with a 90 and leave feedback"*
+- *"Create a new assignment due next Friday in my Math course"*
+- *"List all students in group B of Chemistry"*
+- *"Show me the quiz questions for the midterm"*
+- *"Send an announcement to all students in my course"*
 
 ## Available Tools
 
 | Category | Tools |
 |---|---|
-| **Courses** | `canvas_list_courses`, `set_canvas_config` |
-| **Modules** | `canvas_list_modules` |
-| **Pages** | `canvas_list_pages`, `canvas_get_page_content` |
-| **Files** | `canvas_list_files` |
-| **Announcements** | `canvas_list_announcements` |
-| **Assignments** | `canvas_get_assignments`, `canvas_get_submissions` |
-| **Grading** | `canvas_grade_submission`, `canvas_audit_course` |
-| **Quizzes** | Quiz listing and question management |
-| **Students** | Student roster and progress |
-| **Groups** | Group management |
-| **Calendar** | Calendar events |
-| **Rubrics** | Rubric creation and management |
-| **Create** | Create assignments, pages, announcements |
-| **Communication** | Messaging and discussions |
+| **Courses** | List courses, get course details, set config |
+| **Modules** | List and manage course modules |
+| **Pages** | List pages, read page content |
+| **Files** | List course files |
+| **Announcements** | List and create announcements |
+| **Assignments** | List, create, and update assignments; bulk update due dates |
+| **Submissions** | View student submissions |
+| **Grading** | Grade submissions, audit course grades |
+| **Quizzes** | List quizzes, manage questions, update dates |
+| **Students** | Roster, progress, and student details |
+| **Groups** | List and manage student groups |
+| **Calendar** | List and create calendar events |
+| **Rubrics** | Create and manage grading rubrics |
+| **Communication** | Send messages and manage discussions |
 
 ## Resources
 
@@ -84,33 +93,11 @@ MCP clients that support resources can access Canvas content directly:
 ## Local Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Configure credentials interactively
-npx canvas-mcp config
-
-# Build
 npm run build
-
-# Start MCP server (stdio)
-npm start
-
-# Start HTTP API (for GPT Builder / OpenAPI)
-npm run start:http
+npm start          # MCP stdio server
+npm run start:http # HTTP/Swagger server on http://localhost:3000
 ```
-
-The HTTP server runs on `http://localhost:3000`:
-- Swagger UI: `http://localhost:3000/docs`
-- OpenAPI JSON: `http://localhost:3000/openapi.json`
-
-## Deploy on Render
-
-This repo includes `render.yaml` for one-click deploy as a Web Service.
-
-Required environment variables:
-- `CANVAS_API_TOKEN`
-- `CANVAS_API_DOMAIN` (e.g. `your-school.instructure.com`)
 
 ## License
 

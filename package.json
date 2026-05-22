@@ -18,7 +18,10 @@
         "dist/resources",
         "dist/services",
         "dist/tools",
-        "README.md"
+        "README.md",
+        "llms-install.md",
+        ".claude-plugin",
+        ".mcp.json"
     ],
     "scripts": {
         "build": "tsc",
