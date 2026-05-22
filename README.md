@@ -1,27 +1,81 @@
-# Canvas LMS MCP Server
+# 🎓 Canvas LMS MCP Server
 
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server for **Canvas LMS**. Lets AI agents (Claude, etc.) interact with your courses, assignments, grades, quizzes, modules, files, and more — all through natural language.
+**Bring AI to your Canvas Virtual Classroom!** 🚀
 
-## Install as a Claude Code Plugin
+This project is a **Model Context Protocol (MCP)** server for **Canvas LMS**. In simple terms, it acts as a "translator" or bridge that allows AI assistants (like Claude Desktop, Claude Code, Cursor, etc.) to understand and perform actions in your Canvas courses using natural language.
 
+---
+
+## 🔍 How It Works
+
+When you interact with the server, communication flows as follows:
+
+```mermaid
+graph LR
+    User([User]) -->|Natural Language Instruction| AI[AI Assistant (e.g., Claude)]
+    AI -->|MCP Request| MCP[Canvas MCP Server]
+    MCP -->|REST API (HTTPS)| Canvas[Canvas LMS]
+    Canvas -->|Response| MCP
+    MCP -->|Processed Data| AI
+    AI -->|Friendly Answer| User
 ```
-/plugin install canvas-lms@claude-community
-```
 
-Then set your credentials:
+1. **You ask Claude for something** (e.g., *"Create an assignment due next Friday"*).
+2. **Claude detects your intent** and communicates with the **Canvas MCP Server**, sending the required parameters.
+3. **The server makes a secure call** to the official Canvas API.
+4. **Canvas processes the action** and returns the result.
+5. **Claude confirms the success of the action** back to you in plain, natural language.
 
-```
-/canvas-lms:config
-```
+---
 
-Or set them as environment variables (see [Getting Your Canvas Credentials](#getting-your-canvas-credentials)).
+## 💡 What Can You Ask Your Assistant?
 
-## Quick Start (Claude Desktop / other MCP clients)
+Anything you would normally do manually in Canvas! Here are some everyday examples:
 
-Add this to your `claude_desktop_config.json`:
+### 📖 Querying Information
+* 💬 *"What active courses do I have this semester?"*
+* 💬 *"Show me the ungraded submissions for Assignment 2 in Biology."*
+* 💬 *"Who is in Group B of my Chemistry class?"*
+* 💬 *"What quizzes or exams are scheduled for this week?"*
+
+### ✍️ Creating and Managing Content
+* 💬 *"Create a new assignment named 'History Term Paper' due next Friday."*
+* 💬 *"Post an announcement in my Math course letting everyone know tomorrow's lecture is online."*
+* 💬 *"Create a new module named 'Week 5: Introduction to React' in my course."*
+
+### 💯 Grading & Giving Feedback
+* 💬 *"Grade Maria's essay with a 90/100 and add a comment saying: 'Excellent critical analysis, keep it up!'"*
+* 💬 *"Give me a summary of current student grades in the Physics course."*
+
+---
+
+## 🛠️ Step-by-Step Setup Guide
+
+To connect your AI assistant to Canvas, you need to configure **two things**: your Canvas credentials and your AI client (like Claude).
+
+### Step 1: Obtain your Canvas credentials
+To let the server act on your behalf, it needs permission:
+1. Log in to your **Canvas LMS** account.
+2. Go to **Account** ➡️ **Settings** in the sidebar menu.
+3. Scroll down to the **Approved Integrations** section and click **+ New Access Token**.
+4. Enter a purpose (e.g., "Claude Assistant") and click **Generate Token**.
+5. **Copy the generated token immediately** and store it somewhere safe (you won't be able to see it again after closing the page).
+
+> [!IMPORTANT]
+> You will also need your Canvas Domain. This is the web address of your school/university, for example: `myschool.instructure.com`.
+
+---
+
+### Step 2: Connect to your AI Client
+
+#### Option A: Claude Desktop (Desktop Application)
+1. Open your Claude Desktop configuration file. On Windows, it is located at:
+   `%APPDATA%\Claude\claude_desktop_config.json`
+   *(On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`)*
+2. Add the Canvas server configuration under `mcpServers`:
 
 ```json
 {
@@ -30,75 +84,90 @@ Add this to your `claude_desktop_config.json`:
       "command": "npx",
       "args": ["-y", "@charlie.act7/canvas-mcp-server"],
       "env": {
-        "CANVAS_API_TOKEN": "your_token_here",
-        "CANVAS_API_DOMAIN": "your_school.instructure.com"
+        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+        "CANVAS_API_DOMAIN": "myschool.instructure.com"
       }
     }
   }
 }
 ```
+3. Save the file and restart Claude Desktop. You will see a socket/plug icon indicating the server is successfully connected.
 
-## Getting Your Canvas Credentials
-
-1. Log in to Canvas
-2. Go to **Account → Settings**
-3. Scroll to **Approved Integrations** → click **New Access Token**
-4. Copy the token — you won't see it again
-
-Your domain is the hostname of your Canvas instance, e.g. `myschool.instructure.com`.
-
-| Variable | Example |
-|---|---|
-| `CANVAS_API_TOKEN` | `1234~abcdefg...` |
-| `CANVAS_API_DOMAIN` | `myschool.instructure.com` |
-
-## What You Can Do
-
-Ask Claude things like:
-
-- *"List all my active courses"*
-- *"Show me ungraded submissions for Assignment 3 in Biology 101"*
-- *"Grade María's essay with a 90 and leave feedback"*
-- *"Create a new assignment due next Friday in my Math course"*
-- *"List all students in group B of Chemistry"*
-- *"Show me the quiz questions for the midterm"*
-- *"Send an announcement to all students in my course"*
-
-## Available Tools
-
-| Category | Tools |
-|---|---|
-| **Courses** | List courses, get course details, set config |
-| **Modules** | List and manage course modules |
-| **Pages** | List pages, read page content |
-| **Files** | List course files |
-| **Announcements** | List and create announcements |
-| **Assignments** | List, create, and update assignments; bulk update due dates |
-| **Submissions** | View student submissions |
-| **Grading** | Grade submissions, audit course grades |
-| **Quizzes** | List quizzes, manage questions, update dates |
-| **Students** | Roster, progress, and student details |
-| **Groups** | List and manage student groups |
-| **Calendar** | List and create calendar events |
-| **Rubrics** | Create and manage grading rubrics |
-| **Communication** | Send messages and manage discussions |
-
-## Resources
-
-MCP clients that support resources can access Canvas content directly:
-
-- `canvas://courses/{id}/readme` — Course summary
-- `canvas://courses/{id}/pages/{slug}` — Page HTML content
-
-## Local Development
-
+#### Option B: Claude Code (Terminal CLI)
+If you are using the Claude Code terminal tool, install the plugin by running:
 ```bash
-npm install
-npm run build
-npm start          # MCP stdio server
-npm run start:http # HTTP/Swagger server on http://localhost:3000
+/plugin install canvas-lms@claude-community
+```
+Then, configure your credentials interactively:
+```bash
+/canvas-lms:config
 ```
 
-## License
+---
 
-MIT © Charlie Cárdenas Toledo
+## 💻 Interactive Console Configuration (CLI)
+If you prefer to configure your credentials locally for development, run:
+```bash
+npx @charlie.act7/canvas-mcp-server config
+```
+This will guide you step-by-step to input your domain and API token, storing them securely in a local configuration file.
+
+---
+
+<details>
+<summary>🛠️ <b>View Detailed List of Supported Tools (Technical)</b></summary>
+
+The server exposes the following tools organized by category:
+
+| Category | Included Tools |
+|---|---|
+| **Courses** | List courses, get course details, set basic configuration |
+| **Modules** | List and manage course modules |
+| **Pages** | List pages, read page content HTML |
+| **Files** | List files uploaded to a course |
+| **Announcements** | List and create announcements |
+| **Assignments** | List, create, and update assignments; bulk update due dates |
+| **Submissions** | View student submissions and attachments |
+| **Grading** | Grade submissions, audit course grades |
+| **Quizzes** | List quizzes, manage questions, update quiz dates |
+| **Students** | Course roster, progress tracking, and student details |
+| **Groups** | List and manage student groups |
+| **Calendar** | List and create calendar events/reminders |
+| **Rubrics** | Create and manage grading rubrics |
+| **Communication** | Send direct messages, manage discussions and threads |
+
+### Supported MCP Resources
+For clients supporting direct resources:
+* `canvas://courses/{id}/readme` — Formatted course summary.
+* `canvas://courses/{id}/pages/{slug}` — Direct HTML content of Canvas pages.
+</details>
+
+---
+
+## 🛠️ Local Development (For Developers)
+
+To clone this repository and modify the code:
+
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Build the Project (TypeScript to JavaScript):**
+   ```bash
+   npm run build
+   ```
+3. **Start Server in Stdio Mode (MCP):**
+   ```bash
+   npm start
+   ```
+4. **Start HTTP Server with Swagger Documentation:**
+   If you want to use this as an OpenAI GPT Custom Action, spin up the web server with:
+   ```bash
+   npm run start:http
+   ```
+   Then visit `http://localhost:3000` to view the interactive Swagger interface.
+
+---
+
+## 📄 License
+This project is licensed under the MIT License. Created by [Charlie Cárdenas Toledo](https://github.com/charlie-act7).
