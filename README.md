@@ -35,20 +35,20 @@ graph LR
 
 Anything you would normally do manually in Canvas! Here are some everyday examples:
 
-### 📖 Querying Information
-* 💬 *"What active courses do I have this semester?"*
-* 💬 *"Show me the ungraded submissions for Assignment 2 in Biology."*
-* 💬 *"Who is in Group B of my Chemistry class?"*
-* 💬 *"What quizzes or exams are scheduled for this week?"*
+### 📖 Querying Information & Course Auditing
+* 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
+* 💬 *"Show me all ungraded submissions for 'PE-2.1: Sorting Algorithms' in Programming 101."*
+* 💬 *"Who is in Student Group B for the Physics class?"*
+* 💬 *"Does the assignment 'PE-2.1' have an active rubric associated? If so, retrieve its criteria."*
 
-### ✍️ Creating and Managing Content
-* 💬 *"Create a new assignment named 'History Term Paper' due next Friday."*
-* 💬 *"Post an announcement in my Math course letting everyone know tomorrow's lecture is online."*
-* 💬 *"Create a new module named 'Week 5: Introduction to React' in my course."*
+### ✍️ Creating & Organizing Course Content
+* 💬 *"Create a new module named 'Week 4: Data Structures' in my course."*
+* 💬 *"Add a SubHeader 'LEARNING RESOURCES' inside the 'Week 4' module, and link the study materials page to it."*
+* 💬 *"In my Programming course, create an assignment called 'PE-2.1: Sorting Algorithms'. Add an instructions table with columns for Activity, Specific Instructions, and Deliverable."*
 
-### 💯 Grading & Giving Feedback
-* 💬 *"Grade Maria's essay with a 90/100 and add a comment saying: 'Excellent critical analysis, keep it up!'"*
-* 💬 *"Give me a summary of current student grades in the Physics course."*
+### 💯 Grading, Feedback & Absence Management
+* 💬 *"For assignment 'PE-2.1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Student was absent. To recover this activity, please contact the instructor.'"*
+* 💬 *"Grade Maria's submission for 'PE-2.1' with a 90 based on the rubric, and add a comment: 'Great job! The analysis of sorting algorithms is correct, though the complexity analysis could be deeper. Keep it up!'"*
 
 ---
 

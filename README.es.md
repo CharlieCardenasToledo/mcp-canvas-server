@@ -35,20 +35,20 @@ graph LR
 
 ¡Cualquier tarea administrativa o de consulta que harías manualmente en Canvas! Aquí tienes algunos ejemplos de lo que puedes pedirle:
 
-### 📖 Para Consultar Información
-* 💬 *"¿Qué cursos tengo activos este semestre?"*
-* 💬 *"Muéstrame las entregas pendientes de calificar para la Tarea 2 en Biología."*
-* 💬 *"¿Cuáles son los estudiantes del Grupo B de Química?"*
-* 💬 *"¿Qué cuestionarios o exámenes tenemos programados para esta semana?"*
+### 📖 Para Consultar Información y Auditar Cursos
+* 💬 *"¿Qué cursos tengo activos este semestre? Verifica si existen múltiples paralelos o secciones."*
+* 💬 *"Muéstrame las entregas pendientes de calificar para la actividad 'PE-2.1: Algoritmos de Ordenamiento' en Programación 101."*
+* 💬 *"¿Cuáles son los estudiantes registrados en el Grupo B de la clase de Física?"*
+* 💬 *"Verifica si la tarea 'PE-2.1' tiene una rúbrica activa asociada. Si es así, obtén sus criterios."*
 
-### ✍️ Para Administrar y Crear Contenido
-* 💬 *"Crea una nueva tarea llamada 'Ensayo final de Historia' con fecha de entrega para el próximo viernes."*
-* 💬 *"Publica un anuncio en el curso de Matemáticas avisando que la clase de mañana será virtual."*
-* 💬 *"Crea un nuevo módulo llamado 'Semana 5: Introducción a React' en mi curso."*
+### ✍️ Para Administrar y Crear Contenido Académico
+* 💬 *"Crea un nuevo módulo llamado 'Semana 4: Estructuras de Datos' en mi curso."*
+* 💬 *"Agrega un subencabezado 'RECURSOS DE APRENDIZAJE' dentro del módulo 'Semana 4' y vincula la página de materiales de estudio."*
+* 💬 *"Crea una tarea llamada 'PE-2.1: Algoritmos de Ordenamiento' en mi curso. Añade una tabla de instrucciones con las columnas: Actividad, Instrucciones específicas y Entregable."*
 
-### 💯 Para Calificar y Dar Retroalimentación
-* 💬 *"Califica el ensayo de María con un 90/100 y agrégale un comentario que diga: 'Excelente análisis crítico, continúa así'."*
-* 💬 *"Genera un reporte de las notas actuales de los alumnos del curso de Física."*
+### 💯 Para Calificar y Gestionar Inasistencias
+* 💬 *"Para la tarea 'PE-2.1', identifica a los estudiantes que no entregaron a tiempo. Asígnales una nota de 0 y deja el comentario: 'No asistió a clases. Si desea recuperar la actividad, debe enviar un correo al docente explicando el motivo.'"*
+* 💬 *"Califica la entrega de María en 'PE-2.1' con un 90 basado en la rúbrica y agrégale la retroalimentación: 'Buen trabajo, el análisis sobre ordenamiento es correcto. Se observa un buen desarrollo de la lógica. Sin embargo, faltó detallar el análisis de complejidad temporal.'"*
 
 ---
 
