@@ -48,6 +48,9 @@ graph LR
 
 Aquí tienes algunos ejemplos de consultas y acciones reales que puedes pedirle a tu asistente:
 
+> [!TIP]
+> **Ahorro de Tokens y Eficiencia:** Siempre que sea posible, especifica el ID o la URL directa de Canvas (por ejemplo, `https://uide.instructure.com/courses/35504/assignments/660061`) en tus instrucciones. Esto evita que la IA tenga que buscar y escanear todos tus recursos, lo que resulta en respuestas mucho más rápidas y un ahorro significativo de tokens.
+
 ### 📖 Para Consultar Información y Auditar Cursos
 * 💬 *"¿Qué cursos tengo activos este semestre? Verifica si existen múltiples paralelos o secciones."*
 * 💬 *"Muéstrame las entregas pendientes de calificar para la actividad 'PE-2.1: Algoritmos de Ordenamiento' en Programación 101."*
