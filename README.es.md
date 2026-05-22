@@ -15,9 +15,9 @@ Cuando utilizas este servidor, la comunicación fluye de la siguiente manera:
 
 ```mermaid
 graph LR
-    User([Usuario]) -->|Instrucción en Lenguaje Natural| AI[Asistente de IA (Claude)]
-    AI -->|Petición MCP| MCP[Canvas MCP Server]
-    MCP -->|API REST (HTTPS)| Canvas[Canvas LMS]
+    User([Usuario]) -->|Instrucción en Lenguaje Natural| AI["Asistente de IA (Claude)"]
+    AI -->|Petición MCP| MCP["Canvas MCP Server"]
+    MCP -->|API REST (HTTPS)| Canvas["Canvas LMS"]
     Canvas -->|Respuesta| MCP
     MCP -->|Datos procesados| AI
     AI -->|Respuesta amigable| User
