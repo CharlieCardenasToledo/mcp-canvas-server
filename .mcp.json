@@ -1,10 +1,12 @@
 {
-  "canvas": {
-    "command": "npx",
-    "args": ["-y", "@charlie.act7/canvas-mcp-server"],
-    "env": {
-      "CANVAS_API_TOKEN": "${CANVAS_API_TOKEN}",
-      "CANVAS_API_DOMAIN": "${CANVAS_API_DOMAIN}"
+  "mcpServers": {
+    "canvas": {
+      "command": "npx",
+      "args": ["-y", "@charlie.act7/canvas-mcp-server"],
+      "env": {
+        "CANVAS_API_TOKEN": "${CANVAS_API_TOKEN}",
+        "CANVAS_API_DOMAIN": "${CANVAS_API_DOMAIN}"
+      }
     }
   }
 }

@@ -1,7 +1,13 @@
-import Fastify from "fastify";
+import Fastify, { FastifyError } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { CanvasClient } from "./services/canvas-client.js";
+import { AgentRunner, AgentMode } from "./services/agent-runner.js";
+import { GeminiRunner } from "./services/gemini-runner.js";
+import type { ToolDefinition } from "./common/tool-model.js";
+import type { QuizQuestionAnswer } from "./common/types.js";
 
 function buildOpenApiSpec(): any {
     return {
@@ -23,7 +29,12 @@ function buildOpenApiSpec(): any {
                     summary: "Health check",
                     responses: {
                         "200": {
-                            description: "Server is healthy"
+                            description: "Server is healthy",
+                            content: {
+                                "application/json": {
+                                    schema: { type: "object", properties: { ok: { type: "boolean" } } }
+                                }
+                            }
                         }
                     }
                 }
@@ -34,7 +45,20 @@ function buildOpenApiSpec(): any {
                     summary: "Privacy policy",
                     responses: {
                         "200": {
-                            description: "Privacy policy text"
+                            description: "Privacy policy text",
+                            content: {
+                                "application/json": {
+                                    schema: {
+                                        type: "object",
+                                        properties: {
+                                            service: { type: "string" },
+                                            effective_date: { type: "string" },
+                                            summary: { type: "array", items: { type: "string" } },
+                                            contact: { type: "string" }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -45,7 +69,24 @@ function buildOpenApiSpec(): any {
                     summary: "List active Canvas courses",
                     responses: {
                         "200": {
-                            description: "Courses list"
+                            description: "Courses list",
+                            content: {
+                                "application/json": {
+                                    schema: {
+                                        type: "array",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                id: { type: "integer" },
+                                                name: { type: "string" },
+                                                course_code: { type: "string" },
+                                                workflow_state: { type: "string" },
+                                                enrollment_term_id: { type: "integer" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -88,7 +129,26 @@ function buildOpenApiSpec(): any {
                     ],
                     responses: {
                         "200": {
-                            description: "Assignments list"
+                            description: "Assignments list",
+                            content: {
+                                "application/json": {
+                                    schema: {
+                                        type: "array",
+                                        items: {
+                                            type: "object",
+                                            properties: {
+                                                id: { type: "integer" },
+                                                name: { type: "string" },
+                                                due_at: { type: "string", nullable: true },
+                                                unlock_at: { type: "string", nullable: true },
+                                                lock_at: { type: "string", nullable: true },
+                                                points_possible: { type: "number", nullable: true },
+                                                published: { type: "boolean", nullable: true }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -530,7 +590,7 @@ function buildOpenApiSpec(): any {
     };
 }
 
-export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", port = 3000): Promise<void> {
+export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", port = 3000, tools: ToolDefinition[] = []): Promise<void> {
     const app = Fastify({ logger: true });
 
     await app.register(swagger, {
@@ -538,6 +598,12 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
     });
     await app.register(swaggerUi, {
         routePrefix: "/docs"
+    });
+
+    app.setErrorHandler((error: FastifyError, _request, reply) => {
+        const status = error.statusCode ?? 500;
+        const message = status >= 500 ? "Internal server error" : error.message;
+        reply.code(status).send({ error: message });
     });
 
     app.get("/health", async () => ({ ok: true }));
@@ -678,7 +744,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             question_text?: string;
             points_possible?: number;
             quiz_group_id?: number;
-            answers?: { text: string; weight: number; comments?: string }[];
+            answers?: QuizQuestionAnswer[];
         };
     }>("/courses/:courseId/quizzes/:quizId/questions", async (request, reply) => {
         const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } = request.body || {};
@@ -708,7 +774,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             question_text?: string;
             points_possible?: number;
             quiz_group_id?: number | null;
-            answers?: { text: string; weight: number; comments?: string }[];
+            answers?: QuizQuestionAnswer[];
         };
     }>("/courses/:courseId/quizzes/:quizId/questions/:questionId", async (request) => {
         const courseId = Number.parseInt(request.params.courseId, 10);
@@ -827,6 +893,128 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             dry_run: dryRun,
             results
         };
+    });
+
+    // --- POST /chat ---
+
+    const ollamaRunner = new AgentRunner(
+        client,
+        tools,
+        process.env.OLLAMA_HOST ?? "http://localhost:11434"
+    );
+
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
+    const geminiRunner = GEMINI_API_KEY
+        ? new GeminiRunner(GEMINI_API_KEY, client, tools)
+        : null;
+
+    app.post<{
+        Body: {
+            message: string;
+            model?: string;
+            mode?: AgentMode;
+            provider?: "ollama" | "gemini";
+            gemini_key?: string;
+        };
+    }>("/chat", async (request, reply) => {
+        const { message, model, mode, provider = "ollama", gemini_key } = request.body ?? {};
+
+        if (!message || typeof message !== "string" || !message.trim()) {
+            return reply.code(400).send({ error: "El campo 'message' es requerido." });
+        }
+
+        if (tools.length === 0) {
+            return reply.code(503).send({ error: "El servidor no tiene herramientas cargadas. Inicia con 'serve-http'." });
+        }
+
+        if (provider === "gemini") {
+            const apiKey = gemini_key || GEMINI_API_KEY;
+            if (!apiKey) {
+                return reply.code(400).send({ error: "Se necesita gemini_key en el body o GEMINI_API_KEY en el entorno." });
+            }
+            const runner = gemini_key
+                ? new GeminiRunner(gemini_key, client, tools)
+                : geminiRunner!;
+            return runner.run(message.trim(), { model });
+        }
+
+        return ollamaRunner.run(message.trim(), { model, mode });
+    });
+
+    // --- POST /audit ---
+
+    const SKILL_PATH = process.env.AUDIT_SKILL_PATH ?? path.resolve(
+        process.env.USERPROFILE ?? process.env.HOME ?? ".",
+        "Proyectos Personales",
+        "material-docente - UIDE",
+        ".claude", "commands",
+        "canvas-module-auditor-uide-v2.md"
+    );
+
+    app.post<{
+        Body: {
+            course_id: number;
+            week: number;
+            course_name?: string;
+            provider?: "ollama" | "gemini";
+            model?: string;
+            gemini_key?: string;
+        };
+    }>("/audit", async (request, reply) => {
+        const {
+            course_id,
+            week,
+            course_name,
+            provider = "gemini",
+            model,
+            gemini_key
+        } = request.body ?? {};
+
+        if (!course_id || !week) {
+            return reply.code(400).send({ error: "course_id y week son requeridos." });
+        }
+
+        if (tools.length === 0) {
+            return reply.code(503).send({ error: "El servidor no tiene herramientas cargadas." });
+        }
+
+        // Leer el skill de auditoría
+        let skillContent: string;
+        try {
+            skillContent = await fs.readFile(SKILL_PATH, "utf-8");
+        } catch {
+            return reply.code(500).send({
+                error: `No se encontró el archivo de skill en: ${SKILL_PATH}. Define AUDIT_SKILL_PATH como variable de entorno.`
+            });
+        }
+
+        // Construir el mensaje de auditoría
+        const courseLabel = course_name ? `${course_name} (course_id: ${course_id})` : `course_id: ${course_id}`;
+        const auditMessage =
+            `Ejecuta una auditoría instruccional completa de la Semana ${week} del curso ${courseLabel}. ` +
+            `Sigue exactamente el flujo de los pasos 1 al 4 definidos en las instrucciones. ` +
+            `Genera el reporte markdown completo con todas las secciones y la calificación global.`;
+
+        if (provider === "gemini") {
+            const apiKey = gemini_key || GEMINI_API_KEY;
+            if (!apiKey) {
+                return reply.code(400).send({ error: "Se necesita gemini_key en el body o GEMINI_API_KEY en el entorno." });
+            }
+            const runner = gemini_key
+                ? new GeminiRunner(gemini_key, client, tools)
+                : geminiRunner!;
+            const result = await runner.run(auditMessage, {
+                model: model ?? "gemini-2.5-flash",
+                systemPrompt: skillContent
+            });
+            return { ...result, course_id, week };
+        }
+
+        const result = await ollamaRunner.run(auditMessage, {
+            model,
+            systemPrompt: skillContent
+        });
+        return { ...result, course_id, week };
     });
 
     await app.listen({ host, port });
