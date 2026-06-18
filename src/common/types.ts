@@ -259,9 +259,25 @@ export interface DiscussionEntry {
 
 export interface QuizQuestionAnswer {
     id?: number;
-    text: string;
-    weight: number;
-    comments?: string;
+    // Common
+    answer_text?: string;
+    answer_weight?: number;
+    answer_comments?: string;
+    text_after_answers?: string;
+    // Fill-in-blanks / multiple dropdowns
+    blank_id?: string;
+    // Matching
+    answer_match_left?: string;
+    answer_match_right?: string;
+    matching_answer_incorrect_matches?: string;
+    // Numerical
+    numerical_answer_type?: 'exact_answer' | 'range_answer' | 'precision_answer';
+    exact?: number;
+    margin?: number;
+    approximate?: number;
+    precision?: number;
+    start?: number;
+    end?: number;
 }
 
 export interface QuizQuestion {
@@ -273,6 +289,10 @@ export interface QuizQuestion {
     question_text: string;
     points_possible: number;
     quiz_group_id: number | null;
+    correct_comments?: string;
+    incorrect_comments?: string;
+    neutral_comments?: string;
+    text_after_answers?: string;
     answers: QuizQuestionAnswer[];
 }
 
@@ -311,6 +331,71 @@ export interface Group {
     group_category_id: number | null;
     sis_group_id: string | null;
     storage_quota_mb: number;
+}
+
+export interface ConversationParticipant {
+    id: number;
+    name: string;
+    avatar_url?: string;
+}
+
+export interface ConversationMessage {
+    id: number;
+    created_at: string;
+    body: string;
+    author_id: number;
+    generated: boolean;
+    media_comment?: { media_id: string; display_name: string };
+    attachments?: FileAttachment[];
+    participating_user_ids: number[];
+}
+
+export interface Conversation {
+    id: number;
+    subject: string;
+    workflow_state: 'read' | 'unread' | 'archived';
+    last_message: string;
+    last_message_at: string;
+    message_count: number;
+    subscribed: boolean;
+    private: boolean;
+    starred: boolean;
+    participants?: ConversationParticipant[];
+    messages?: ConversationMessage[];
+}
+
+export interface NewQuiz {
+    id: string;
+    title: string;
+    instructions?: string;
+    due_at?: string | null;
+    lock_at?: string | null;
+    unlock_at?: string | null;
+    points_possible?: number;
+    time_limit?: number | null;
+    shuffle_answers?: boolean;
+    shuffle_questions?: boolean;
+    allowed_attempts?: number;
+    one_question_at_a_time?: boolean;
+    cant_go_back?: boolean;
+    show_correct_answers?: boolean;
+    course_id?: string;
+    assignment_id?: string;
+}
+
+export interface NewQuizItem {
+    id: string;
+    position?: number;
+    points_possible?: number;
+    entry_type: string;
+    entry: {
+        title?: string;
+        item_body?: string;
+        interaction_type_slug?: string;
+        interaction_data?: Record<string, any>;
+        scoring_data?: Record<string, any>;
+        answer_feedback?: Record<string, any>;
+    };
 }
 
 export interface AppointmentGroup {
