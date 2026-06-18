@@ -107,10 +107,10 @@ export const assignmentTools: ToolDefinition[] = [
                 content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
             };
             }
-            },
-            {
-            name: "canvas_list_assignment_groups",
-            tool: {
+    },
+    {
+        name: "canvas_list_assignment_groups",
+        tool: {
             name: "canvas_list_assignment_groups",
             description: "List all assignment groups in a course",
             inputSchema: {
@@ -123,18 +123,18 @@ export const assignmentTools: ToolDefinition[] = [
                 },
                 required: ["course_id"],
             },
-            },
-            handler: async (client: CanvasClient, args: any) => {
+        },
+        handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const groups = await client.getAssignmentGroups(courseId);
             return {
                 content: [{ type: "text", text: JSON.stringify(groups, null, 2) }],
             };
-            }
-            },
-            {
-            name: "canvas_get_submissions",
+        }
+    },
+    {
+        name: "canvas_get_submissions",
         tool: {
             name: "canvas_get_submissions",
             description: "Get submissions for a specific assignment in a course",
@@ -218,7 +218,7 @@ export const assignmentTools: ToolDefinition[] = [
                 student_id: z.coerce.number()
             }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
-            const submission = await client.getSubmissionComments(courseId, input.assignment_id, input.student_id);
+            const submission = await client.getSingleSubmission(courseId, input.assignment_id, input.student_id);
             return {
                 content: [{ type: "text", text: JSON.stringify(submission.submission_comments || [], null, 2) }],
             };
@@ -519,6 +519,90 @@ export const assignmentTools: ToolDefinition[] = [
 
             return {
                 content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
+            };
+        }
+    },
+    {
+        name: "canvas_submit_assignment",
+        tool: {
+            name: "canvas_submit_assignment",
+            description: "Submit a file upload assignment as a student. Uploads a local file and creates the submission in one step.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
+                    assignment_id: {
+                        type: "number",
+                        description: "The ID of the assignment to submit"
+                    },
+                    file_path: {
+                        type: "string",
+                        description: "Absolute local path to the file to submit (e.g. C:/Users/name/file.pdf)"
+                    },
+                    file_name: {
+                        type: "string",
+                        description: "File name to use in Canvas (e.g. MySubmission.pdf)"
+                    },
+                    content_type: {
+                        type: "string",
+                        description: "MIME type of the file (e.g. application/pdf)"
+                    }
+                },
+                required: ["course_id", "assignment_id", "file_path", "file_name", "content_type"]
+            }
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                assignment_id: z.coerce.number(),
+                file_path: z.string(),
+                file_name: z.string(),
+                content_type: z.string()
+            }).parse(args);
+
+            const courseId = await resolveCourseId(client, input.course_id);
+            const submission = await client.submitAssignmentFile(
+                courseId,
+                input.assignment_id,
+                input.file_path,
+                input.file_name,
+                input.content_type
+            );
+
+            return {
+                content: [{ type: "text", text: JSON.stringify(submission, null, 2) }]
+            };
+        }
+    },
+    {
+        name: "canvas_delete_assignment",
+        tool: {
+            name: "canvas_delete_assignment",
+            description: "Delete an assignment from a course",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
+                    assignment_id: { type: "number", description: "The ID of the assignment to delete" }
+                },
+                required: ["course_id", "assignment_id"],
+            },
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                assignment_id: z.coerce.number()
+            }).parse(args);
+            const courseId = await resolveCourseId(client, input.course_id);
+            const result = await client.deleteAssignment(courseId, input.assignment_id);
+            return {
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
             };
         }
     },

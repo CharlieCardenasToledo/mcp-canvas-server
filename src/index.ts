@@ -33,6 +33,11 @@ import { configTools } from "./tools/config-tools.js";
 import { rubricTools } from "./tools/rubric-tools.js";
 import { calendarTools } from "./tools/calendar-tools.js";
 import { groupTools } from "./tools/group-tools.js";
+import { enrollmentTools } from "./tools/enrollment-tools.js";
+import { conversationTools } from "./tools/conversation-tools.js";
+import { newQuizTools } from "./tools/new-quiz-tools.js";
+import { analyticsTools } from "./tools/analytics-tools.js";
+import { peerReviewTools } from "./tools/peer-review-tools.js";
 import { canvasResources } from "./resources/canvas-resources.js";
 import { canvasPrompts } from "./prompts/canvas-prompts.js";
 import { ToolDefinition } from "./common/tool-model.js";
@@ -132,7 +137,12 @@ program
             ...configTools,
             ...rubricTools,
             ...calendarTools,
-            ...groupTools
+            ...groupTools,
+            ...enrollmentTools,
+            ...conversationTools,
+            ...newQuizTools,
+            ...analyticsTools,
+            ...peerReviewTools
         ];
 
         // --- Tool Handlers ---
@@ -197,7 +207,28 @@ program
     .action(async (options: { host: string; port: string }) => {
         const client = getClient();
         const port = Number.parseInt(options.port, 10);
-        await startHttpServer(client, options.host, port);
+        const allTools: ToolDefinition[] = [
+            ...courseTools,
+            ...assignmentTools,
+            ...quizTools,
+            ...gradingTools,
+            ...communicationTools,
+            ...studentTools,
+            ...quizQuestionTools,
+            ...createTools,
+            ...moduleTools,
+            ...fileTools,
+            ...configTools,
+            ...rubricTools,
+            ...calendarTools,
+            ...groupTools,
+            ...enrollmentTools,
+            ...conversationTools,
+            ...newQuizTools,
+            ...analyticsTools,
+            ...peerReviewTools
+        ];
+        await startHttpServer(client, options.host, port, allTools);
     });
 
 program.parse(process.argv);
