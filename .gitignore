@@ -4,5 +4,37 @@ dist/
 .DS_Store
 npm-debug.log*
 yarn-error.log*
+
+# IDE / editor
 .claude/
 .vscode/
+.idea/
+
+# Dev scripts — local utilities that are not part of the MCP server
+src/find_middleware.ts
+src/list_my_courses.ts
+src/find_assignment.ts
+src/test_*.ts
+src/check_*.ts
+src/grade_*.ts
+src/view_*.ts
+src/audit_*.ts
+src/create_taller.ts
+src/update_group.ts
+
+# Personal/tool-specific config
+.claude-plugin/
+.rtfm/
+CLAUDE.md
+AGENTS.md
+
+# Binaries / assets not needed in source control
+image.png
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Temp / logs
+*.log
+*.tmp
