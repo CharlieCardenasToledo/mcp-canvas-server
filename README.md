@@ -1,6 +1,7 @@
 # 🎓 Canvas LMS MCP Server
 
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
+[![npm downloads](https://img.shields.io/npm/dm/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Bring AI to your Canvas Virtual Classroom! 🚀
@@ -56,15 +57,36 @@ Here are some realistic, everyday prompts you can use with your AI assistant:
 * 💬 *"Show me all ungraded submissions for 'Essay 1: Introduction to Sociology' in Sociology 101."*
 * 💬 *"Who is in Student Group A for the Chemistry class?"*
 * 💬 *"Does the assignment 'Project Proposal' have an active rubric associated? If so, retrieve its criteria."*
+* 💬 *"Search for everything related to 'photosynthesis' across my Biology course — assignments, pages, and discussions."*
 
 ### ✍️ Creating & Organizing Course Content
 * 💬 *"Create a new module named 'Week 1: Foundations' in my course."*
 * 💬 *"Add a SubHeader 'REQUIRED READINGS' inside the 'Week 1' module, and link the syllabus page to it."*
 * 💬 *"In my Business course, create an assignment called 'Case Study 1: Market Analysis'. Add an instructions table with columns for Criteria, Requirements, and Points."*
+* 💬 *"Create a threaded discussion topic in my course titled 'Weekly Reflection' and pin it to the top."*
 
 ### 💯 Grading & Absence Management
 * 💬 *"For assignment 'Case Study 1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Activity not submitted. Please contact the instructor if you have a valid excuse.'"*
 * 💬 *"Grade John's submission for 'Essay 1' with a 90 based on the rubric, and add a comment: 'Great job! The analysis is well-structured, though you could expand more on the conclusion. Keep it up!'"*
+
+### 📊 Student Engagement & Analytics
+* 💬 *"Show me the activity analytics for my Calculus course — how active have students been this week?"*
+* 💬 *"Which students haven't been active in course 12345 in the last few days? I want to reach out to them."*
+* 💬 *"Get the analytics for student [ID] in my Biology course — how many page views and participations do they have?"*
+
+### 💬 Messaging & Communication
+* 💬 *"Send a private message to student [ID] reminding them their 'Project Proposal' is due tomorrow."*
+* 💬 *"How many unread messages do I have in my Canvas inbox?"*
+* 💬 *"Show me my last 10 inbox conversations."*
+
+### 👥 Enrollment & Student Management
+* 💬 *"Who is enrolled in my course? Show me students and TAs separately."*
+* 💬 *"Search for a student named 'Maria Gonzalez' in account 1."*
+* 💬 *"Enroll user [ID] as a TA in my Physics course."*
+
+### 🔄 Peer Reviews
+* 💬 *"List all peer review assignments for 'Research Paper' in course 12345."*
+* 💬 *"Manually assign student [ID] to review [other student ID]'s submission for 'Essay 2'."*
 
 ---
 
@@ -133,28 +155,32 @@ This will guide you step-by-step to input your domain and API token, storing the
 ## Supported Tools & Resources
 
 <details>
-<summary><b>View Detailed List of Supported Tools & Resources (Technical)</b></summary>
+<summary><b>View all 111 tools organized by category</b></summary>
 
-### Tools List
+### Tool Inventory
 
-The server exposes the following tools organized by category:
-
-| Category | Included Tools |
-|---|---|
-| **Courses** | List courses, get course details, set basic configuration |
-| **Modules** | List and manage course modules |
-| **Pages** | List pages, read page content HTML |
-| **Files** | List files uploaded to a course |
-| **Announcements** | List and create announcements |
-| **Assignments** | List, create, and update assignments; bulk update due dates |
-| **Submissions** | View student submissions and attachments |
-| **Grading** | Grade submissions, audit course grades |
-| **Quizzes** | List quizzes, manage questions, update quiz dates |
-| **Students** | Course roster, progress tracking, and student details |
-| **Groups** | List and manage student groups |
-| **Calendar** | List and create calendar events/reminders |
-| **Rubrics** | Create and manage grading rubrics |
-| **Communication** | Send direct messages, manage discussions and threads |
+| Category | Tools | Description |
+|---|---|---|
+| **Courses** | `list_courses` · `create_course` · `update_course` · `get_syllabus` | Manage and configure courses |
+| **Modules** | `list_modules` · `create_module` · `update_module` · `delete_module` · `create_module_item` · `update_module_item` · `delete_module_item` | Full CRUD for modules and their items |
+| **Pages** | `list_pages` · `get_page_content` · `create_page` · `update_page` · `delete_page` | Manage wiki pages |
+| **Files & Folders** | `list_files` · `upload_file` · `update_file` · `delete_file` · `list_folders` · `create_folder` · `update_folder` · `delete_folder` | File management with folder support |
+| **Assignments** | `get_assignments` · `get_assignment` · `create_assignment` · `update_assignment` · `delete_assignment` · `update_assignment_dates` · `bulk_update_due_dates` · `list_assignment_groups` | Full assignment lifecycle |
+| **Submissions** | `get_submissions` · `get_submission` · `get_submission_comments` · `delete_submission_comment` · `submit_assignment` | View and manage student submissions |
+| **Grading** | `grade_submission` · `grade_multiple_submissions` · `audit_course` | Grade individually or in bulk |
+| **Rubrics** | `list_rubrics` · `get_rubric` · `create_rubric` · `update_rubric` · `create_rubric_association` | Build and attach grading rubrics |
+| **Quizzes (Classic)** | `list_quizzes` · `get_quiz` · `create_quiz` · `update_quiz` · `update_quiz_dates` · `list_quiz_questions` · `get_quiz_question` · `create_quiz_question` · `update_quiz_question` · `delete_quiz_question` · `create_quiz_group` | Classic Canvas quiz engine |
+| **New Quizzes (LTI)** | `create_new_quiz` · `update_new_quiz` · `delete_new_quiz` · `list_new_quiz_items` · `get_new_quiz_item` · `create_new_quiz_item` · `update_new_quiz_item` · `delete_new_quiz_item` | Modern LTI quiz engine (`/api/quiz/v1`) |
+| **Students** | `list_students` · `list_students_with_grades` · `get_student_grades` · `get_student_assignments` · `list_assignment_due_dates` | Roster and progress tracking |
+| **Enrollments** | `list_course_enrollments` · `enroll_user` · `remove_enrollment` · `get_user` · `get_profile` · `search_users` | Manage who is in your course |
+| **Groups** | `list_group_categories` · `create_group_category` · `list_groups_in_category` · `create_group` · `assign_unassigned_members` · `add_group_member` | Student group management |
+| **Discussions** | `list_discussions` · `get_discussion_entries` · `create_discussion` · `delete_discussion` · `post_discussion_reply` | Discussion boards |
+| **Announcements** | `list_announcements` · `post_announcement` · `update_announcement` | Course announcements |
+| **Conversations** | `list_conversations` · `get_conversation` · `get_conversation_unread_count` · `send_conversation` · `reply_to_conversation` | Private inbox messaging |
+| **Calendar** | `list_appointment_groups` · `get_appointment_group` · `create_appointment_group` · `update_appointment_group` · `delete_appointment_group` · `list_appointment_group_users` · `list_appointment_group_groups` · `get_next_appointment` | Scheduling and appointments |
+| **Analytics** | `get_course_analytics` · `get_student_analytics` · `get_course_activity_stream` · `search_course_content` | Engagement data and content search |
+| **Peer Reviews** | `list_peer_reviews` · `get_submission_peer_reviews` · `create_peer_review` · `delete_peer_review` | Configure and manage peer assessments |
+| **Health & Config** | `health_check` · `set_canvas_config` | Verify connection and update credentials at runtime |
 
 ### Supported MCP Resources
 For clients supporting direct resources:
