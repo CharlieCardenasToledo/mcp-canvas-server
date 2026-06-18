@@ -52,7 +52,7 @@ const program = new Command();
 program
     .name("canvas-mcp")
     .description("MCP Server for Canvas LMS (Refactored)")
-    .version("1.1.0");
+    .version("1.2.0");
 
 // --- CLI Commands ---
 
@@ -111,7 +111,7 @@ program
         const server = new Server(
             {
                 name: "canvas-lms-server",
-                version: "1.0.0",
+                version: "1.2.0",
             },
             {
                 capabilities: {
