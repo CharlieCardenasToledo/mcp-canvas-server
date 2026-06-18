@@ -1,5 +1,6 @@
 # 🎓 Canvas LMS MCP Server
 
+[![CI](https://github.com/CharlieCardenasToledo/mcp-canvas-server/actions/workflows/ci.yml/badge.svg)](https://github.com/CharlieCardenasToledo/mcp-canvas-server/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![npm downloads](https://img.shields.io/npm/dm/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
