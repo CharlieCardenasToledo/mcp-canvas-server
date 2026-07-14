@@ -49,6 +49,17 @@ dotenv.config();
 const configManager = new ConfigManager();
 const program = new Command();
 
+function uniqueTools(tools: ToolDefinition[]): ToolDefinition[] {
+    const seen = new Set<string>();
+    return tools.filter((tool) => {
+        if (seen.has(tool.name)) {
+            return false;
+        }
+        seen.add(tool.name);
+        return true;
+    });
+}
+
 program
     .name("canvas-mcp")
     .description("MCP Server for Canvas LMS (Refactored)")
@@ -123,7 +134,7 @@ program
         );
 
         // --- Aggregation ---
-        const allTools: ToolDefinition[] = [
+        const allTools: ToolDefinition[] = uniqueTools([
             ...courseTools,
             ...assignmentTools,
             ...quizTools,
@@ -143,7 +154,7 @@ program
             ...newQuizTools,
             ...analyticsTools,
             ...peerReviewTools
-        ];
+        ]);
 
         // --- Tool Handlers ---
         server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -207,7 +218,7 @@ program
     .action(async (options: { host: string; port: string }) => {
         const client = getClient();
         const port = Number.parseInt(options.port, 10);
-        const allTools: ToolDefinition[] = [
+        const allTools: ToolDefinition[] = uniqueTools([
             ...courseTools,
             ...assignmentTools,
             ...quizTools,
@@ -227,7 +238,7 @@ program
             ...newQuizTools,
             ...analyticsTools,
             ...peerReviewTools
-        ];
+        ]);
         await startHttpServer(client, options.host, port, allTools);
     });
 

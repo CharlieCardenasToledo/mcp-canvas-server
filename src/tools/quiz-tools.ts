@@ -445,6 +445,78 @@ export const quizTools: ToolDefinition[] = [
         }
     },
     {
+        name: "canvas_get_quiz_submissions",
+        tool: {
+            name: "canvas_get_quiz_submissions",
+            description: "Get all submissions for a quiz, including user info. Useful to see who has responded.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    quiz_id: { type: "number", description: "The quiz ID" }
+                },
+                required: ["course_id", "quiz_id"]
+            }
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                quiz_id: z.number()
+            }).parse(args);
+            const courseId = await resolveCourseId(client, input.course_id);
+            const submissions = await client.getQuizSubmissions(courseId, input.quiz_id);
+            return { content: [{ type: "text", text: JSON.stringify(submissions, null, 2) }] };
+        }
+    },
+    {
+        name: "canvas_check_quiz_pending",
+        tool: {
+            name: "canvas_check_quiz_pending",
+            description: "Check which enrolled students have NOT submitted a quiz. Returns a list of pending students with their name and email. Excludes test accounts.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    quiz_id: { type: "number", description: "The quiz ID" }
+                },
+                required: ["course_id", "quiz_id"]
+            }
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                quiz_id: z.number()
+            }).parse(args);
+            const courseId = await resolveCourseId(client, input.course_id);
+            const result = await client.checkQuizPending(courseId, input.quiz_id);
+            return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        }
+    },
+    {
+        name: "canvas_delete_quiz",
+        tool: {
+            name: "canvas_delete_quiz",
+            description: "Permanently delete a classic quiz from a course. This cannot be undone.",
+            inputSchema: {
+                type: "object",
+                properties: {
+                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    quiz_id: { type: "number", description: "The quiz ID to delete" }
+                },
+                required: ["course_id", "quiz_id"]
+            }
+        },
+        handler: async (client: CanvasClient, args: any) => {
+            const input = z.object({
+                course_id: z.union([z.number(), z.string()]),
+                quiz_id: z.number()
+            }).parse(args);
+            const courseId = await resolveCourseId(client, input.course_id);
+            const result = await client.deleteQuiz(courseId, input.quiz_id);
+            return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
+        }
+    },
+    {
         name: "canvas_update_quiz",
         tool: {
             name: "canvas_update_quiz",
