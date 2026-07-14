@@ -38,3 +38,7 @@ image.png
 # Temp / logs
 *.log
 *.tmp
+
+.playwright-mcp/
+package-lock.json
+
