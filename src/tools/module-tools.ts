@@ -67,7 +67,7 @@ export const moduleTools: ToolDefinition[] = [
         name: "canvas_update_module",
         tool: {
             name: "canvas_update_module",
-            description: "Update an existing module",
+            description: "Update an existing module (name, published, position, prerequisites, completion requirements)",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -78,7 +78,32 @@ export const moduleTools: ToolDefinition[] = [
                     module_id: { type: "number", description: "The ID of the module" },
                     name: { type: "string", description: "The new name of the module" },
                     published: { type: "boolean", description: "Whether the module is published" },
-                    position: { type: "number", description: "The new position of the module" }
+                    position: { type: "number", description: "The new position of the module" },
+                    prerequisite_module_ids: {
+                        type: "array",
+                        items: { type: "number" },
+                        description: "IDs of modules that must be completed before this one unlocks"
+                    },
+                    require_sequential_progress: {
+                        type: "boolean",
+                        description: "Whether items in the module must be completed in order"
+                    },
+                    completion_requirements: {
+                        type: "array",
+                        description: "Completion requirements for module items. Replaces ALL existing requirements — include every item that needs one.",
+                        items: {
+                            type: "object",
+                            properties: {
+                                id: { type: "number", description: "The module item ID" },
+                                type: {
+                                    type: "string",
+                                    description: "must_view, must_submit, must_contribute, min_score, must_mark_done"
+                                },
+                                min_score: { type: "number", description: "Required when type is min_score" }
+                            },
+                            required: ["id", "type"]
+                        }
+                    }
                 },
                 required: ["course_id", "module_id"],
             },
@@ -89,13 +114,23 @@ export const moduleTools: ToolDefinition[] = [
                 module_id: z.number(),
                 name: z.string().optional(),
                 published: z.boolean().optional(),
-                position: z.number().optional()
+                position: z.number().optional(),
+                prerequisite_module_ids: z.array(z.number()).optional(),
+                require_sequential_progress: z.boolean().optional(),
+                completion_requirements: z.array(z.object({
+                    id: z.number(),
+                    type: z.string(),
+                    min_score: z.number().optional()
+                })).optional()
             }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const module = await client.updateModule(courseId, input.module_id, {
                 name: input.name,
                 published: input.published,
-                position: input.position
+                position: input.position,
+                prerequisite_module_ids: input.prerequisite_module_ids,
+                require_sequential_progress: input.require_sequential_progress,
+                completion_requirements: input.completion_requirements
             });
             return {
                 content: [{ type: "text", text: JSON.stringify(module, null, 2) }],
@@ -212,7 +247,11 @@ export const moduleTools: ToolDefinition[] = [
                     position: { type: "number", description: "The new position of the item" },
                     indent: { type: "number", description: "The new level of indentation (0-3)" },
                     published: { type: "boolean", description: "Whether the item is published" },
-                    new_module_id: { type: "number", description: "Move the item to a new module" }
+                    new_module_id: { type: "number", description: "Move the item to a new module" },
+                    completion_requirement_type: {
+                        type: "string",
+                        description: "Completion requirement type: must_view, must_submit, must_contribute, min_score, must_mark_done"
+                    }
                 },
                 required: ["course_id", "module_id", "item_id"],
             },
@@ -226,7 +265,8 @@ export const moduleTools: ToolDefinition[] = [
                 position: z.number().optional(),
                 indent: z.number().optional(),
                 published: z.boolean().optional(),
-                new_module_id: z.number().optional()
+                new_module_id: z.number().optional(),
+                completion_requirement_type: z.string().optional()
             }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.updateModuleItem(courseId, input.module_id, input.item_id, {
@@ -234,7 +274,10 @@ export const moduleTools: ToolDefinition[] = [
                 position: input.position,
                 indent: input.indent,
                 published: input.published,
-                module_id: input.new_module_id
+                module_id: input.new_module_id,
+                ...(input.completion_requirement_type && {
+                    completion_requirement: { type: input.completion_requirement_type }
+                })
             });
             return {
                 content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

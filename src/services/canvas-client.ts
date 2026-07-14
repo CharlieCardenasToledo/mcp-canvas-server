@@ -450,13 +450,46 @@ export class CanvasClient {
             name?: string;
             published?: boolean;
             position?: number;
+            prerequisite_module_ids?: number[];
+            require_sequential_progress?: boolean;
+            completion_requirements?: Array<{ id: number; type: string; min_score?: number }>;
         }
     ): Promise<Module> {
+        // Canvas only accepts arrays (prerequisite_module_ids, completion_requirements)
+        // via form-encoding, not JSON.
+        const hasArrays = data.prerequisite_module_ids !== undefined || data.completion_requirements !== undefined;
+        if (hasArrays) {
+            const params = new URLSearchParams();
+            if (data.name !== undefined) params.set('module[name]', data.name);
+            if (data.published !== undefined) params.set('module[published]', String(data.published));
+            if (data.position !== undefined) params.set('module[position]', String(data.position));
+            if (data.require_sequential_progress !== undefined) {
+                params.set('module[require_sequential_progress]', String(data.require_sequential_progress));
+            }
+            if (data.prerequisite_module_ids) {
+                for (const id of data.prerequisite_module_ids) {
+                    params.append('module[prerequisite_module_ids][]', String(id));
+                }
+            }
+            if (data.completion_requirements) {
+                for (const req of data.completion_requirements) {
+                    params.append('module[completion_requirements][][id]', String(req.id));
+                    params.append('module[completion_requirements][][type]', req.type);
+                    if (req.min_score !== undefined) {
+                        params.append('module[completion_requirements][][min_score]', String(req.min_score));
+                    }
+                }
+            }
+            const response = await this.client.put<Module>(
+                `courses/${courseId}/modules/${moduleId}`,
+                params,
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+            return response.data;
+        }
         const response = await this.client.put<Module>(
             `courses/${courseId}/modules/${moduleId}`,
-            {
-                module: data
-            }
+            { module: data }
         );
         return response.data;
     }
@@ -501,13 +534,28 @@ export class CanvasClient {
             indent?: number;
             published?: boolean;
             module_id?: number;
+            completion_requirement?: { type: string };
         }
     ): Promise<any> {
+        // Canvas only accepts completion_requirement via form-encoding, not JSON.
+        // Use URLSearchParams when completion_requirement is present.
+        if (data.completion_requirement) {
+            const params = new URLSearchParams();
+            params.set('module_item[completion_requirement][type]', data.completion_requirement.type);
+            const { completion_requirement, ...rest } = data;
+            for (const [key, value] of Object.entries(rest)) {
+                if (value !== undefined) params.set(`module_item[${key}]`, String(value));
+            }
+            const response = await this.client.put(
+                `courses/${courseId}/modules/${moduleId}/items/${itemId}`,
+                params,
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+            return response.data;
+        }
         const response = await this.client.put(
             `courses/${courseId}/modules/${moduleId}/items/${itemId}`,
-            {
-                module_item: data
-            }
+            { module_item: data }
         );
         return response.data;
     }
@@ -567,6 +615,52 @@ export class CanvasClient {
         }
 
         return uploadResponse.data;
+    }
+
+    async getQuizSubmissions(courseId: number, quizId: number): Promise<any[]> {
+        const response = await this.client.get(`courses/${courseId}/quizzes/${quizId}/submissions`, {
+            params: { include: ['user'], per_page: 100 }
+        });
+        return response.data.quiz_submissions ?? [];
+    }
+
+    async deleteQuiz(courseId: number, quizId: number): Promise<{ deleted: boolean }> {
+        await this.client.delete(`courses/${courseId}/quizzes/${quizId}`);
+        return { deleted: true };
+    }
+
+    async checkQuizPending(courseId: number, quizId: number): Promise<{
+        quiz_id: number;
+        total_students: number;
+        submitted: number;
+        pending: Array<{ id: number; name: string; email: string }>;
+    }> {
+        const [students, submissionsResp] = await Promise.all([
+            this.getEnrollments(courseId),
+            this.client.get(`courses/${courseId}/quizzes/${quizId}/submissions`, {
+                params: { per_page: 100 }
+            })
+        ]);
+
+        const realStudents = students.filter(u => u.name !== 'Estudiante de prueba' && u.sis_user_id !== null);
+        const submittedIds = new Set<number>(
+            (submissionsResp.data.quiz_submissions ?? []).map((s: any) => s.user_id)
+        );
+
+        const pending = realStudents
+            .filter(u => !submittedIds.has(u.id!))
+            .map(u => ({
+                id: u.id!,
+                name: u.name ?? 'Desconocido',
+                email: u.login_id ?? ''
+            }));
+
+        return {
+            quiz_id: quizId,
+            total_students: realStudents.length,
+            submitted: submittedIds.size,
+            pending
+        };
     }
 
     async createQuiz(courseId: number, quiz: Partial<Quiz> & { title: string }): Promise<Quiz> {
