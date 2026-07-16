@@ -132,14 +132,20 @@ To let the server act on your behalf, it needs permission:
 ```
 3. Save the file and restart Claude Desktop. You will see a socket/plug icon indicating the server is successfully connected.
 
-#### Option B: Claude Code (Terminal CLI)
-If you are using the Claude Code terminal tool, install the plugin by running:
+#### Option B: Claude Code (CLI)
+Add the Canvas MCP server directly from your terminal:
+
 ```bash
-/plugin install canvas-lms@claude-community
+claude mcp add canvas \
+  --env CANVAS_API_TOKEN=YOUR_ACCESS_TOKEN_HERE \
+  --env CANVAS_API_DOMAIN=myschool.instructure.com \
+  -- npx -y @charlie.act7/canvas-mcp-server
 ```
-Then, configure your credentials interactively:
+
+Verify the server is connected:
+
 ```bash
-/canvas-lms:config
+claude mcp list
 ```
 
 ---
