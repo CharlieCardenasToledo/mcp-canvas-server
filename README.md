@@ -11,6 +11,8 @@ This project is a **Model Context Protocol (MCP)** server for **Canvas LMS**. It
 
 ---
 
+**Versión en Español:** [README.es.md](README.es.md)
+
 ## Table of Contents
 - [How It Works](#how-it-works)
 - [Use Cases & Examples](#use-cases--examples)
@@ -18,6 +20,7 @@ This project is a **Model Context Protocol (MCP)** server for **Canvas LMS**. It
   - [Step 1: Obtain Canvas Credentials](#step-1-obtain-canvas-credentials)
   - [Step 2: Connect to your AI Client](#step-2-connect-to-your-ai-client)
 - [CLI Configuration](#cli-configuration)
+- [LLM / AI Client Integration](#llm--ai-client-integration)
 - [Supported Tools & Resources](#supported-tools--resources)
 - [Local Development](#local-development)
 - [License](#license)
@@ -197,6 +200,12 @@ For clients supporting direct resources:
 
 ---
 
+## LLM / AI Client Integration
+
+For detailed integration instructions covering Cursor, GitHub Copilot, Cline, OpenAI Custom GPTs, and self-hosted setups, see [`llms-install.md`](llms-install.md).
+
+---
+
 ## Local Development
 
 To clone this repository and modify the code:
@@ -223,4 +232,4 @@ To clone this repository and modify the code:
 ---
 
 ## License
-This project is licensed under the MIT License. Created by [Charlie Cárdenas Toledo](https://github.com/charlie-act7).
+This project is licensed under the MIT License. Created by [Charlie Cárdenas Toledo](https://github.com/CharlieCardenasToledo).
