@@ -1,15 +1,14 @@
-# 🎓 Canvas LMS MCP Server
+# Canvas LMS MCP Server
 
 [![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-¡Lleva tu aula virtual de Canvas al siguiente nivel con Inteligencia Artificial! 🚀
+Integración avanzada para Canvas Virtual Classroom con Inteligencia Artificial.
 
-Este proyecto es un servidor de **Model Context Protocol (MCP)** para **Canvas LMS**. Funciona como un puente que permite a asistentes de Inteligencia Artificial (como Claude Desktop, Claude Code, Cursor, etc.) consultar y administrar tus cursos de Canvas mediante instrucciones en lenguaje natural.
+Este proyecto es un servidor de **Model Context Protocol (MCP)** para **Canvas LMS**. Funciona como un puente que permite a asistentes de Inteligencia Artificial (como Claude Desktop, Claude Code, Cursor, Windsurf, Cline, Roo Code, GitHub Copilot, Continue, Zed, Codex CLI, n8n, etc.) consultar y administrar tus cursos de Canvas mediante instrucciones en lenguaje natural.
 
 ---
 
-## Tabla de Contenidos
 - [¿Cómo funciona?](#cómo-funciona)
 - [Ejemplos de Uso](#ejemplos-de-uso)
 - [Guía de Instalación](#guía-de-instalación)
@@ -51,34 +50,33 @@ Aquí tienes algunos ejemplos de consultas y acciones reales que puedes pedirle 
 > [!TIP]
 > **Ahorro de Tokens y Eficiencia:** Siempre que sea posible, especifica el ID o la URL directa de Canvas (por ejemplo, `https://[tu_institucion].instructure.com/courses/[codigo_curso]/assignments/[codigo_actividad]`) en tus instrucciones. Esto evita que la IA tenga que buscar y escanear todos tus recursos, lo que resulta en respuestas mucho más rápidas y un ahorro significativo de tokens.
 
-### 📖 Para Consultar Información y Auditar Cursos
-* 💬 *"¿Qué cursos tengo activos este semestre? Verifica si existen múltiples paralelos o secciones."*
-* 💬 *"Muéstrame las entregas pendientes de calificar para la actividad 'Ensayo 1: Introducción a la Sociología' en Sociología 101."*
-* 💬 *"¿Cuáles son los estudiantes registrados en el Grupo A de la clase de Química?"*
-* 💬 *"Verifica si la tarea 'Propuesta de Proyecto' tiene una rúbrica activa asociada. Si es así, obtén sus criterios."*
+### Para Consultar Información y Auditar Cursos
+* *"¿Qué cursos tengo activos este semestre? Verifica si existen múltiples paralelos o secciones."*
+* *"Muéstrame las entregas pendientes de calificar para la actividad 'Ensayo 1: Introducción a la Sociología' en Sociología 101."*
+* *"¿Cuáles son los estudiantes registrados en el Grupo A de la clase de Química?"*
+* *"Verifica si la tarea 'Propuesta de Proyecto' tiene una rúbrica activa asociada. Si es así, obtén sus criterios."*
 
-### ✍️ Para Administrar y Crear Contenido Académico
-* 💬 *"Crea un nuevo módulo llamado 'Semana 1: Fundamentos' en mi curso."*
-* 💬 *"Agrega un Subencabezado 'LECTURAS OBLIGATORIAS' dentro del módulo 'Semana 1' y enlaza la página del sílabo."*
-* 💬 *"En mi curso de Negocios, crea una tarea llamada 'Estudio de Caso 1: Análisis de Mercado'. Agrega una tabla de instrucciones con columnas para Criterios, Requisitos y Puntaje."*
+### Para Administrar y Crear Contenido Académico
+* *"Crea un nuevo módulo llamado 'Semana 1: Fundamentos' en mi curso."*
+* *"Agrega un Subencabezado 'LECTURAS OBLIGATORIAS' dentro del módulo 'Semana 1' y enlaza la página del sílabo."*
+* *"En mi curso de Negocios, crea una tarea llamada 'Estudio de Caso 1: Análisis de Mercado'. Agrega una tabla de instrucciones con columnas para Criterios, Requisitos y Puntaje."*
 
-### 💯 Gestión de Calificaciones y Asistencia
-* 💬 *"Para la tarea 'Estudio de Caso 1', busca a todos los estudiantes que no hayan entregado. Ponles un 0 de nota y agrégales el comentario: 'Actividad no entregada. Si tienes una justificación válida, por favor comunícate con el docente.'"*
-* 💬 *"Califica la entrega de Juan en 'Ensayo 1' con un 90 basado en la rúbrica, y agrega un comentario: '¡Excelente trabajo! El análisis está muy bien estructurado, aunque podrías profundizar un poco más en las conclusiones. ¡Sigue así!'"*
+### Gestión de Calificaciones y Asistencia
+* *"Para la tarea 'Estudio de Caso 1', busca a todos los estudiantes que no hayan entregado. Ponles un 0 de nota y agrégales el comentario: 'Actividad no entregada. Si tienes una justificación válida, por favor comunícate con el docente.'"*
+* *"Califica la entrega de Juan en 'Ensayo 1' con un 90 basado en la rúbrica, y agrega un comentario: '¡Excelente trabajo! El análisis está muy bien estructurado, aunque podrías profundizar un poco más en las conclusiones. ¡Sigue así!'"*
 
 ---
 
 ## Guía de Instalación
 
-Para conectar tu asistente de IA a Canvas, necesitas configurar **dos cosas**: tus credenciales de Canvas y el cliente de IA (como Claude).
+Para guías detalladas paso a paso para todos los clientes de IA y editores soportados (Windsurf, Cline, Roo Code, Copilot, Continue, Zed, LibreChat, Custom GPTs), consulta [`llms-install.md`](llms-install.md).
 
 ### Paso 1: Obtener credenciales de Canvas
-Para que el servidor pueda actuar en tu nombre, necesita permiso:
 1. Inicia sesión en tu cuenta de **Canvas LMS**.
-2. Dirígete a **Cuenta (Account)** ➡️ **Configuración (Settings)** en el menú lateral.
-3. Baja hasta la sección **Integraciones Aprobadas (Approved Integrations)** y haz clic en el botón **+ Nuevo token de acceso (+ New Access Token)**.
+2. Dirígete a **Cuenta (Account)** > **Configuración (Settings)** en el menú lateral.
+3. Baja hasta la sección **Integraciones Aprobadas (Approved Integrations)** y haz clic en **+ Nuevo token de acceso (+ New Access Token)**.
 4. Escribe un propósito (ej. "Asistente Claude") y haz clic en **Generar token**.
-5. **Copia el token generado inmediatamente** y guárdalo en un lugar seguro (no podrás volver a verlo después de cerrar la pantalla).
+5. Copia el token generado inmediatamente y guárdalo en un lugar seguro.
 
 > [!IMPORTANT]
 > También necesitarás el dominio de tu Canvas. Es la dirección web de tu escuela/universidad, por ejemplo: `miuniversidad.instructure.com`.
@@ -88,9 +86,9 @@ Para que el servidor pueda actuar en tu nombre, necesita permiso:
 ### Paso 2: Configurar tu Cliente de IA
 
 #### Opción A: Claude Desktop (Aplicación de Escritorio)
-1. Abre tu archivo de configuración de Claude Desktop. En Windows se encuentra en:
-   `%APPDATA%\Claude\claude_desktop_config.json`
-   *(En macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`)*
+1. Abre tu archivo de configuración de Claude Desktop:
+   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 2. Agrega la configuración del servidor Canvas bajo `mcpServers`:
 
 ```json
@@ -107,16 +105,13 @@ Para que el servidor pueda actuar en tu nombre, necesita permiso:
   }
 }
 ```
-3. Guarda el archivo y reinicia Claude Desktop. Verás un icono de enchufe indicando que el servidor está conectado.
 
-#### Opción B: Claude Code (Terminal)
-Si utilizas la herramienta de línea de comandos Claude Code, simplemente instala el plugin ejecutando:
+#### Opción B: Claude Code (CLI)
 ```bash
-/plugin install canvas-lms@claude-community
-```
-Luego, configura tus credenciales de forma interactiva:
-```bash
-/canvas-lms:config
+claude mcp add canvas \
+  --env CANVAS_API_TOKEN=TU_TOKEN_DE_ACCESO_AQUÍ \
+  --env CANVAS_API_DOMAIN=miuniversidad.instructure.com \
+  -- npx -y @charlie.act7/canvas-mcp-server@latest
 ```
 
 ---
@@ -126,18 +121,17 @@ Si prefieres configurar las credenciales de manera local e interactiva en tu ter
 ```bash
 npx @charlie.act7/canvas-mcp-server config
 ```
-Esto te pedirá el dominio y tu API token paso a paso, guardándolos de forma segura en un archivo de configuración local.
 
 ---
 
 ## Herramientas y Recursos Soportados
 
 <details>
-<summary><b>Ver Lista Detallada de Herramientas y Recursos Soportados (Técnico)</b></summary>
+<summary><b>Ver Lista Detallada de Herramientas y Recursos Soportados</b></summary>
 
 ### Lista de Herramientas
 
-El servidor expone internamente las siguientes herramientas organizadas por categorías:
+El servidor expone internamente 117 herramientas organizadas por categorías:
 
 | Categoría | Herramientas Incluidas |
 |---|---|
@@ -155,6 +149,7 @@ El servidor expone internamente las siguientes herramientas organizadas por cate
 | **Calendario (Calendar)** | Listar y crear eventos o recordatorios en la agenda |
 | **Rúbricas (Rubrics)** | Crear y gestionar rúbricas de evaluación |
 | **Comunicación (Communication)** | Enviar mensajes directos, gestionar foros y discusiones |
+| **Access Tokens** | Gestión de tokens de API y auto-renovación |
 
 ### Recursos MCP Soportados
 Para clientes compatibles con recursos directos:
@@ -165,8 +160,6 @@ Para clientes compatibles con recursos directos:
 ---
 
 ## Desarrollo Local
-
-Si deseas clonar este repositorio y hacer modificaciones:
 
 1. **Instalar Dependencias:**
    ```bash
@@ -181,11 +174,10 @@ Si deseas clonar este repositorio y hacer modificaciones:
    npm start
    ```
 4. **Ejecutar Servidor HTTP con Documentación Swagger:**
-   Si deseas utilizarlo como una acción de GPTs de OpenAI, levanta el servidor web con:
    ```bash
    npm run start:http
    ```
-   Si deseas ver la interfaz interactiva de Swagger, visita `http://localhost:3000`.
+   Visita `http://localhost:3000` para ver la interfaz de Swagger.
 
 ---
 

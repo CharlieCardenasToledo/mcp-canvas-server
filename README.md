@@ -1,4 +1,4 @@
-# 🎓 Canvas LMS MCP Server
+# Canvas LMS MCP Server
 
 [![npm](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server.svg)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
 [![npm downloads](https://img.shields.io/npm/dm/@charlie.act7/canvas-mcp-server.svg)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
@@ -6,9 +6,9 @@
 [![MCP](https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-green.svg)](https://modelcontextprotocol.io/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-Model Context Protocol (MCP) server for **Canvas LMS**. It acts as a bridge that allows AI assistants (Claude Code, Claude Desktop, Cursor, Codex CLI, n8n, OpenAI Custom GPTs, and generic MCP clients) to query, grade, audit, and manage Canvas courses, assignments, rubrics, submissions, quizzes, conversations, and analytics using natural language. Two transports are supported: `stdio` (default) and Streamable-HTTP with interactive Swagger API documentation.
+Model Context Protocol (MCP) server for **Canvas LMS**. It acts as a bridge that allows AI assistants (Claude Code, Claude Desktop, Cursor, Windsurf, Cline, Roo Code, GitHub Copilot, Continue, Zed, Codex CLI, n8n, OpenAI Custom GPTs, and generic MCP clients) to query, grade, audit, and manage Canvas courses, assignments, rubrics, submissions, quizzes, conversations, and analytics using natural language. Two transports are supported: `stdio` (default) and Streamable-HTTP with interactive Swagger API documentation.
 
-> **Versión en Español:** [README.es.md](README.es.md)
+> **Versión en Español:** [README.es.md](README.es.md) | **LLM Integration Guide:** [llms-install.md](llms-install.md)
 
 ---
 
@@ -19,6 +19,11 @@ Model Context Protocol (MCP) server for **Canvas LMS**. It acts as a bridge that
 - [Connect to Other Clients](#connect-to-other-clients)
   - [Claude Desktop](#claude-desktop)
   - [Cursor](#cursor)
+  - [Windsurf (Codeium)](#windsurf-codeium)
+  - [Cline & Roo Code](#cline--roo-code)
+  - [GitHub Copilot](#github-copilot)
+  - [Continue.dev](#continuedev)
+  - [Zed Editor](#zed-editor)
   - [Codex CLI](#codex-cli)
   - [Generic MCP Client (stdio)](#generic-mcp-client-stdio)
   - [HTTP Server & OpenAI Custom GPTs](#http-server--openai-custom-gpts)
@@ -136,6 +141,8 @@ Manual form — drop into `~/.claude.json`:
 
 ## Connect to Other Clients
 
+For step-by-step setup guides for all AI clients (Windsurf, Cline, Roo Code, Copilot, Continue, Zed, LibreChat, Custom GPTs), see [`llms-install.md`](llms-install.md).
+
 ### Claude Desktop
 
 Edit your Claude Desktop configuration file:
@@ -206,7 +213,7 @@ Visit `http://localhost:3000` to inspect interactive Swagger / OpenAPI definitio
 ### Step 1: Obtain Canvas Credentials
 
 1. Log in to your **Canvas LMS** account.
-2. Go to **Account** ➡️ **Settings** in the sidebar navigation.
+2. Go to **Account** > **Settings** in the sidebar navigation.
 3. Scroll to **Approved Integrations** and click **+ New Access Token**.
 4. Enter a purpose (e.g. "Claude Canvas MCP") and click **Generate Token**.
 5. Copy the generated token immediately and store it securely (it will not be shown again).
@@ -251,30 +258,30 @@ Optionally pass `--port <port>` (default `3000`) and `--host <host>` (default `0
 > [!TIP]
 > **Token Saving & Efficiency:** Whenever possible, specify the Canvas ID or the direct Canvas URL (e.g., `https://[your_institution].instructure.com/courses/[course_id]/assignments/[assignment_id]`) in your prompts. This prevents the AI from scanning all your courses/resources, leading to faster responses and substantial token savings.
 
-### 📖 Course Auditing & Querying
-- 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
-- 💬 *"Show me all ungraded submissions for 'Essay 1: Introduction to Sociology' in Sociology 101."*
-- 💬 *"Who is in Student Group A for the Chemistry class?"*
-- 💬 *"Does the assignment 'Project Proposal' have an active rubric associated? If so, retrieve its criteria."*
-- 💬 *"Search for everything related to 'photosynthesis' across my Biology course — assignments, pages, and discussions."*
+### Course Auditing & Querying
+- *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
+- *"Show me all ungraded submissions for 'Essay 1: Introduction to Sociology' in Sociology 101."*
+- *"Who is in Student Group A for the Chemistry class?"*
+- *"Does the assignment 'Project Proposal' have an active rubric associated? If so, retrieve its criteria."*
+- *"Search for everything related to 'photosynthesis' across my Biology course — assignments, pages, and discussions."*
 
-### ✍️ Creating & Organizing Course Content
-- 💬 *"Create a new module named 'Week 1: Foundations' in my course."*
-- 💬 *"Add a SubHeader 'REQUIRED READINGS' inside the 'Week 1' module, and link the syllabus page to it."*
-- 💬 *"In my Business course, create an assignment called 'Case Study 1: Market Analysis'. Add an instructions table with columns for Criteria, Requirements, and Points."*
-- 💬 *"Create a threaded discussion topic in my course titled 'Weekly Reflection' and pin it to the top."*
+### Creating & Organizing Course Content
+- *"Create a new module named 'Week 1: Foundations' in my course."*
+- *"Add a SubHeader 'REQUIRED READINGS' inside the 'Week 1' module, and link the syllabus page to it."*
+- *"In my Business course, create an assignment called 'Case Study 1: Market Analysis'. Add an instructions table with columns for Criteria, Requirements, and Points."*
+- *"Create a threaded discussion topic in my course titled 'Weekly Reflection' and pin it to the top."*
 
-### 💯 Grading & Absence Management
-- 💬 *"For assignment 'Case Study 1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Activity not submitted.'"*
-- 💬 *"Grade John's submission for 'Essay 1' with a 90 based on the rubric, and add feedback."*
+### Grading & Absence Management
+- *"For assignment 'Case Study 1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Activity not submitted.'"*
+- *"Grade John's submission for 'Essay 1' with a 90 based on the rubric, and add feedback."*
 
-### 📊 Student Engagement & Analytics
-- 💬 *"Show me the activity analytics for my Calculus course — how active have students been this week?"*
-- 💬 *"Which students haven't been active in course 12345 in the last few days?"*
+### Student Engagement & Analytics
+- *"Show me the activity analytics for my Calculus course — how active have students been this week?"*
+- *"Which students haven't been active in course 12345 in the last few days?"*
 
-### 💬 Messaging & Communication
-- 💬 *"Send a private message to student [ID] reminding them their 'Project Proposal' is due tomorrow."*
-- 💬 *"How many unread messages do I have in my Canvas inbox?"*
+### Messaging & Communication
+- *"Send a private message to student [ID] reminding them their 'Project Proposal' is due tomorrow."*
+- *"How many unread messages do I have in my Canvas inbox?"*
 
 ---
 
@@ -360,7 +367,7 @@ npm run chat       # Launch interactive Ollama bridge test CLI
 ## Documentation
 
 - [`README.es.md`](./README.es.md) — Versión en Español del README.
-- [`llms-install.md`](./llms-install.md) — Detailed guide for client integration (Cursor, Copilot, Custom GPTs).
+- [`llms-install.md`](./llms-install.md) — Master AI Client & Editor Integration Guide.
 
 ---
 
