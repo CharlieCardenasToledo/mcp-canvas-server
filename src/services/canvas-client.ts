@@ -1,5 +1,14 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { Course, Module, Assignment, Quiz, Submission, User, Page, FileAttachment, Announcement, DiscussionTopic, DiscussionEntry, QuizQuestion, QuizQuestionAnswer, QuizGroup, Folder, AppointmentGroup, Enrollment, Conversation, ConversationMessage, NewQuiz, NewQuizItem } from '../common/types.js';
+import { Course, Module, Assignment, Quiz, Submission, User, Page, FileAttachment, Announcement, DiscussionTopic, DiscussionEntry, QuizQuestion, QuizQuestionAnswer, QuizGroup, Folder, AppointmentGroup, Enrollment, Conversation, ConversationMessage, NewQuiz, NewQuizItem, AccessToken } from '../common/types.js';
+
+export interface CanvasClientOptions {
+    /** Proactively regenerate the active access token before it expires. Default: true. */
+    autoRenewToken?: boolean;
+    /** How many hours before expiry to trigger a renewal. Default: 24. */
+    renewThresholdHours?: number;
+    /** Called with the new token value whenever auto-renew regenerates it, so it can be persisted. */
+    onTokenRenewed?: (newToken: string) => void;
+}
 
 export class CanvasClient {
     private client: AxiosInstance;
@@ -7,11 +16,23 @@ export class CanvasClient {
     private token: string;
     private domain: string;
 
-    constructor(token: string, domain: string) {
+    private readonly autoRenewToken: boolean;
+    private readonly renewThresholdMs: number;
+    private readonly onTokenRenewed?: (newToken: string) => void;
+    private readonly tokenMetaCacheMs = 15 * 60 * 1000;
+    private tokenMeta: { id: number; expiresAtMs: number | null } | null = null;
+    private tokenMetaCheckedAt = 0;
+    private isCheckingToken = false;
+
+    constructor(token: string, domain: string, options: CanvasClientOptions = {}) {
         this.token = token;
         this.domain = domain;
+        this.autoRenewToken = options.autoRenewToken ?? true;
+        this.renewThresholdMs = (options.renewThresholdHours ?? 24) * 60 * 60 * 1000;
+        this.onTokenRenewed = options.onTokenRenewed;
         this.client = this.createAxiosInstance(token, domain);
         this.quizClient = this.createAxiosInstance(token, domain, 'api/quiz/v1');
+        this.attachAutoRenewInterceptor();
     }
 
     private createAxiosInstance(token: string, domain: string, apiPath = 'api/v1'): AxiosInstance {
@@ -30,6 +51,71 @@ export class CanvasClient {
         this.domain = domain;
         this.client = this.createAxiosInstance(token, domain);
         this.quizClient = this.createAxiosInstance(token, domain, 'api/quiz/v1');
+        this.tokenMeta = null;
+        this.tokenMetaCheckedAt = 0;
+        this.attachAutoRenewInterceptor();
+    }
+
+    private attachAutoRenewInterceptor(): void {
+        this.client.interceptors.request.use(async (config) => {
+            if (this.autoRenewToken && !this.isCheckingToken) {
+                await this.maybeRenewToken();
+            }
+            return config;
+        });
+    }
+
+    private applyNewToken(newToken: string): void {
+        this.token = newToken;
+        this.client.defaults.headers['Authorization'] = `Bearer ${newToken}`;
+        this.quizClient.defaults.headers['Authorization'] = `Bearer ${newToken}`;
+    }
+
+    // Canvas only returns the full token value on creation/regeneration, never on list/get.
+    // To identify which listed token corresponds to the one currently authenticating this
+    // client, we match its (short) token_hint as a substring of the known full token value.
+    private async refreshTokenMeta(): Promise<void> {
+        this.isCheckingToken = true;
+        try {
+            const tokens = await this.getAllPages<AccessToken>('users/self/user_generated_tokens', { per_page: 100 });
+            const match = tokens.find(t => t.token_hint && this.token.includes(t.token_hint));
+            this.tokenMeta = match
+                ? { id: match.id, expiresAtMs: match.expires_at ? new Date(match.expires_at).getTime() : null }
+                : null;
+        } catch {
+            // Don't block requests if we can't determine token metadata (e.g. insufficient permissions).
+            this.tokenMeta = null;
+        } finally {
+            this.tokenMetaCheckedAt = Date.now();
+            this.isCheckingToken = false;
+        }
+    }
+
+    private async maybeRenewToken(): Promise<void> {
+        const now = Date.now();
+        if (now - this.tokenMetaCheckedAt >= this.tokenMetaCacheMs) {
+            await this.refreshTokenMeta();
+        }
+        if (!this.tokenMeta || this.tokenMeta.expiresAtMs === null) return;
+        if (this.tokenMeta.expiresAtMs - now > this.renewThresholdMs) return;
+
+        this.isCheckingToken = true;
+        try {
+            const response = await this.client.put<AccessToken>(`users/self/tokens/${this.tokenMeta.id}`, {
+                token: { regenerate: true }
+            });
+            if (response.data.token) {
+                this.applyNewToken(response.data.token);
+                this.onTokenRenewed?.(response.data.token);
+            }
+            this.tokenMeta = {
+                id: this.tokenMeta.id,
+                expiresAtMs: response.data.expires_at ? new Date(response.data.expires_at).getTime() : null
+            };
+            this.tokenMetaCheckedAt = Date.now();
+        } finally {
+            this.isCheckingToken = false;
+        }
     }
 
     private parseLinkHeader(header: string | undefined): Record<string, string> {
@@ -1249,5 +1335,58 @@ export class CanvasClient {
     async deleteNewQuizItem(courseId: number, quizId: string, itemId: string): Promise<{ deleted: boolean }> {
         await this.quizClient.delete(`courses/${courseId}/quizzes/${quizId}/items/${itemId}`);
         return { deleted: true };
+    }
+
+    // --- Access Tokens ---
+
+    async listAccessTokens(userId: number | string = 'self'): Promise<AccessToken[]> {
+        return this.getAllPages<AccessToken>(`users/${userId}/user_generated_tokens`, { per_page: 100 });
+    }
+
+    async getAccessToken(userId: number | string = 'self', tokenId: number | string): Promise<AccessToken> {
+        const response = await this.client.get<AccessToken>(`users/${userId}/tokens/${tokenId}`);
+        return response.data;
+    }
+
+    async createAccessToken(userId: number | string = 'self', data: {
+        purpose: string;
+        expires_at?: string;
+        scopes?: string[];
+    }): Promise<AccessToken> {
+        const response = await this.client.post<AccessToken>(`users/${userId}/tokens`, { token: data });
+        return response.data;
+    }
+
+    async updateAccessToken(userId: number | string = 'self', tokenId: number | string, data: {
+        purpose?: string;
+        expires_at?: string | null;
+        scopes?: string[];
+        regenerate?: boolean;
+    }): Promise<AccessToken> {
+        const response = await this.client.put<AccessToken>(`users/${userId}/tokens/${tokenId}`, { token: data });
+        return response.data;
+    }
+
+    async deleteAccessToken(userId: number | string = 'self', tokenId: number | string): Promise<{ deleted: boolean }> {
+        await this.client.delete(`users/${userId}/tokens/${tokenId}`);
+        return { deleted: true };
+    }
+
+    // Convenience wrapper around updateAccessToken({ regenerate: true }) that, when the
+    // regenerated token is the one currently authenticating this client, also hot-swaps
+    // and persists it so the MCP server keeps working without a manual reconfiguration.
+    async regenerateAccessToken(userId: number | string = 'self', tokenId: number | string): Promise<AccessToken> {
+        const result = await this.updateAccessToken(userId, tokenId, { regenerate: true });
+        const isActiveToken = userId === 'self' && this.tokenMeta?.id === Number(tokenId);
+        if (isActiveToken && result.token) {
+            this.applyNewToken(result.token);
+            this.onTokenRenewed?.(result.token);
+            this.tokenMeta = {
+                id: this.tokenMeta!.id,
+                expiresAtMs: result.expires_at ? new Date(result.expires_at).getTime() : null
+            };
+            this.tokenMetaCheckedAt = Date.now();
+        }
+        return result;
     }
 }

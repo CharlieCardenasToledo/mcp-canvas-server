@@ -1,29 +1,45 @@
 # 🎓 Canvas LMS MCP Server
 
-[![CI](https://github.com/CharlieCardenasToledo/mcp-canvas-server/actions/workflows/ci.yml/badge.svg)](https://github.com/CharlieCardenasToledo/mcp-canvas-server/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
-[![npm downloads](https://img.shields.io/npm/dm/@charlie.act7/canvas-mcp-server)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![npm](https://img.shields.io/npm/v/@charlie.act7/canvas-mcp-server.svg)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
+[![npm downloads](https://img.shields.io/npm/dm/@charlie.act7/canvas-mcp-server.svg)](https://www.npmjs.com/package/@charlie.act7/canvas-mcp-server)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
+[![MCP](https://img.shields.io/badge/MCP-stdio%20%7C%20HTTP-green.svg)](https://modelcontextprotocol.io/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-Bring AI to your Canvas Virtual Classroom! 🚀
+Model Context Protocol (MCP) server for **Canvas LMS**. It acts as a bridge that allows AI assistants (Claude Code, Claude Desktop, Cursor, Codex CLI, n8n, OpenAI Custom GPTs, and generic MCP clients) to query, grade, audit, and manage Canvas courses, assignments, rubrics, submissions, quizzes, conversations, and analytics using natural language. Two transports are supported: `stdio` (default) and Streamable-HTTP with interactive Swagger API documentation.
 
-This project is a **Model Context Protocol (MCP)** server for **Canvas LMS**. It acts as a bridge that allows AI assistants (like Claude Desktop, Claude Code, Cursor, etc.) to query and manage your Canvas courses using natural language.
+> **Versión en Español:** [README.es.md](README.es.md)
 
 ---
 
-**Versión en Español:** [README.es.md](README.es.md)
-
-## Table of Contents
+- [Requirements & Platform Support](#requirements--platform-support)
 - [How It Works](#how-it-works)
-- [Use Cases & Examples](#use-cases--examples)
-- [Setup Guide](#setup-guide)
-  - [Step 1: Obtain Canvas Credentials](#step-1-obtain-canvas-credentials)
-  - [Step 2: Connect to your AI Client](#step-2-connect-to-your-ai-client)
-- [CLI Configuration](#cli-configuration)
-- [LLM / AI Client Integration](#llm--ai-client-integration)
-- [Supported Tools & Resources](#supported-tools--resources)
-- [Local Development](#local-development)
+- [Install](#install)
+- [Connect to Claude Code](#connect-to-claude-code)
+- [Connect to Other Clients](#connect-to-other-clients)
+  - [Claude Desktop](#claude-desktop)
+  - [Cursor](#cursor)
+  - [Codex CLI](#codex-cli)
+  - [Generic MCP Client (stdio)](#generic-mcp-client-stdio)
+  - [HTTP Server & OpenAI Custom GPTs](#http-server--openai-custom-gpts)
+- [Authentication & Credentials](#authentication--credentials)
+- [Transports](#transports)
+- [Use Cases & Prompts](#use-cases--prompts)
+- [Tools](#tools)
+- [Resources](#resources)
+- [Configuration Reference](#configuration-reference)
+- [Development](#development)
+- [Documentation](#documentation)
 - [License](#license)
+
+---
+
+## Requirements & Platform Support
+
+- **Node.js** ≥ 18.0.0 (Node.js ≥ 20.x recommended).
+- **Canvas LMS Access**: An active account on your institution's Canvas LMS (e.g. `myschool.instructure.com`).
+- **Canvas API Access Token**: Generated via your Canvas Account Settings page.
+- **Linux / macOS / Windows / WSL2**.
 
 ---
 
@@ -43,88 +59,70 @@ graph LR
 
 1. **You ask the AI** (e.g., *"Create an assignment due next Friday"*).
 2. **The AI detects your intent** and communicates with the **Canvas MCP Server**, sending the required parameters.
-3. **The server makes a secure call** to the official Canvas API.
-4. **Canvas processes the action** and returns the response.
+3. **The server makes a secure call** to the official Canvas LMS API over HTTPS.
+4. **Canvas LMS processes the action** and returns the response payload.
 5. **The AI confirms the success of the action** back to you in plain, natural language.
 
 ---
 
-## Use Cases & Examples
+## Install
 
-Here are some realistic, everyday prompts you can use with your AI assistant:
+### Published package
 
-> [!TIP]
-> **Token Saving & Efficiency:** Whenever possible, specify the Canvas ID or the direct Canvas URL (e.g., `https://[your_institution].instructure.com/courses/[course_id]/assignments/[assignment_id]`) in your prompts. This prevents the AI from scanning all your courses/resources, leading to faster responses and substantial token savings.
+```bash
+npx @charlie.act7/canvas-mcp-server@latest
+```
 
-### 📖 Course Auditing & Querying
-* 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
-* 💬 *"Show me all ungraded submissions for 'Essay 1: Introduction to Sociology' in Sociology 101."*
-* 💬 *"Who is in Student Group A for the Chemistry class?"*
-* 💬 *"Does the assignment 'Project Proposal' have an active rubric associated? If so, retrieve its criteria."*
-* 💬 *"Search for everything related to 'photosynthesis' across my Biology course — assignments, pages, and discussions."*
+This is the recommended path for end users. `npx` keeps the binary cached and self-updates on `@latest`.
 
-### ✍️ Creating & Organizing Course Content
-* 💬 *"Create a new module named 'Week 1: Foundations' in my course."*
-* 💬 *"Add a SubHeader 'REQUIRED READINGS' inside the 'Week 1' module, and link the syllabus page to it."*
-* 💬 *"In my Business course, create an assignment called 'Case Study 1: Market Analysis'. Add an instructions table with columns for Criteria, Requirements, and Points."*
-* 💬 *"Create a threaded discussion topic in my course titled 'Weekly Reflection' and pin it to the top."*
+### Interactive CLI Setup
 
-### 💯 Grading & Absence Management
-* 💬 *"For assignment 'Case Study 1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Activity not submitted. Please contact the instructor if you have a valid excuse.'"*
-* 💬 *"Grade John's submission for 'Essay 1' with a 90 based on the rubric, and add a comment: 'Great job! The analysis is well-structured, though you could expand more on the conclusion. Keep it up!'"*
+Configure your Canvas credentials interactively before running:
 
-### 📊 Student Engagement & Analytics
-* 💬 *"Show me the activity analytics for my Calculus course — how active have students been this week?"*
-* 💬 *"Which students haven't been active in course 12345 in the last few days? I want to reach out to them."*
-* 💬 *"Get the analytics for student [ID] in my Biology course — how many page views and participations do they have?"*
+```bash
+npx @charlie.act7/canvas-mcp-server config
+```
 
-### 💬 Messaging & Communication
-* 💬 *"Send a private message to student [ID] reminding them their 'Project Proposal' is due tomorrow."*
-* 💬 *"How many unread messages do I have in my Canvas inbox?"*
-* 💬 *"Show me my last 10 inbox conversations."*
+### From source
 
-### 👥 Enrollment & Student Management
-* 💬 *"Who is enrolled in my course? Show me students and TAs separately."*
-* 💬 *"Search for a student named 'Maria Gonzalez' in account 1."*
-* 💬 *"Enroll user [ID] as a TA in my Physics course."*
-
-### 🔄 Peer Reviews
-* 💬 *"List all peer review assignments for 'Research Paper' in course 12345."*
-* 💬 *"Manually assign student [ID] to review [other student ID]'s submission for 'Essay 2'."*
+```bash
+git clone https://github.com/CharlieCardenasToledo/mcp-canvas-server.git
+cd mcp-canvas-server
+npm install
+npm run build
+node dist/index.js
+```
 
 ---
 
-## Setup Guide
+## Connect to Claude Code
 
-To connect your AI assistant to Canvas, you need to configure **two things**: your Canvas credentials and your AI client (like Claude).
+CLI form:
 
-### Step 1: Obtain Canvas Credentials
-To let the server act on your behalf, it needs permission:
-1. Log in to your **Canvas LMS** account.
-2. Go to **Account** ➡️ **Settings** in the sidebar menu.
-3. Scroll down to the **Approved Integrations** section and click **+ New Access Token**.
-4. Enter a purpose (e.g., "Claude Assistant") and click **Generate Token**.
-5. **Copy the generated token immediately** and store it somewhere safe (you won't be able to see it again after closing the page).
+```bash
+claude mcp add canvas \
+  --env CANVAS_API_TOKEN=YOUR_ACCESS_TOKEN_HERE \
+  --env CANVAS_API_DOMAIN=myschool.instructure.com \
+  -- npx -y @charlie.act7/canvas-mcp-server@latest
+```
 
-> [!IMPORTANT]
-> You will also need your Canvas Domain. This is the web address of your school/university, for example: `myschool.instructure.com`.
+Or from a local build:
 
----
+```bash
+claude mcp add canvas \
+  --env CANVAS_API_TOKEN=YOUR_ACCESS_TOKEN_HERE \
+  --env CANVAS_API_DOMAIN=myschool.instructure.com \
+  -- node /absolute/path/to/mcp-canvas-server/dist/index.js
+```
 
-### Step 2: Connect to your AI Client
-
-#### Option A: Claude Desktop (Desktop Application)
-1. Open your Claude Desktop configuration file. On Windows, it is located at:
-   `%APPDATA%\Claude\claude_desktop_config.json`
-   *(On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`)*
-2. Add the Canvas server configuration under `mcpServers`:
+Manual form — drop into `~/.claude.json`:
 
 ```json
 {
   "mcpServers": {
     "canvas": {
       "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server"],
+      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
       "env": {
         "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
         "CANVAS_API_DOMAIN": "myschool.instructure.com"
@@ -133,53 +131,168 @@ To let the server act on your behalf, it needs permission:
   }
 }
 ```
-3. Save the file and restart Claude Desktop. You will see a socket/plug icon indicating the server is successfully connected.
 
-#### Option B: Claude Code (CLI)
-Add the Canvas MCP server directly from your terminal:
+---
+
+## Connect to Other Clients
+
+### Claude Desktop
+
+Edit your Claude Desktop configuration file:
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "canvas": {
+      "command": "npx",
+      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+      "env": {
+        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+        "CANVAS_API_DOMAIN": "myschool.instructure.com"
+      }
+    }
+  }
+}
+```
+
+### Cursor — `~/.cursor/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "canvas": {
+      "command": "npx",
+      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+      "env": {
+        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+        "CANVAS_API_DOMAIN": "myschool.instructure.com"
+      }
+    }
+  }
+}
+```
+
+### Codex CLI
 
 ```bash
-claude mcp add canvas \
+codex mcp add canvas \
   --env CANVAS_API_TOKEN=YOUR_ACCESS_TOKEN_HERE \
   --env CANVAS_API_DOMAIN=myschool.instructure.com \
-  -- npx -y @charlie.act7/canvas-mcp-server
+  npx -y @charlie.act7/canvas-mcp-server@latest
 ```
 
-Verify the server is connected:
+### Generic MCP client (stdio)
+
+Any client that can spawn an MCP server over stdio can use `npx -y @charlie.act7/canvas-mcp-server@latest`. The server speaks MCP 2025 (`tools`, `resources`, `prompts`).
+
+### HTTP Server & OpenAI Custom GPTs
+
+Run the server in HTTP mode with Fastify and interactive Swagger documentation:
 
 ```bash
-claude mcp list
+npx @charlie.act7/canvas-mcp-server serve-http --port 3000 --host 0.0.0.0
+# or from source:
+npm run start:http
 ```
+
+Visit `http://localhost:3000` to inspect interactive Swagger / OpenAPI definitions or hook into OpenAI Custom GPT Actions.
 
 ---
 
-## CLI Configuration
-If you prefer to configure your credentials locally for development, run:
-```bash
-npx @charlie.act7/canvas-mcp-server config
-```
-This will guide you step-by-step to input your domain and API token, storing them securely in a local configuration file.
+## Authentication & Credentials
+
+### Step 1: Obtain Canvas Credentials
+
+1. Log in to your **Canvas LMS** account.
+2. Go to **Account** ➡️ **Settings** in the sidebar navigation.
+3. Scroll to **Approved Integrations** and click **+ New Access Token**.
+4. Enter a purpose (e.g. "Claude Canvas MCP") and click **Generate Token**.
+5. Copy the generated token immediately and store it securely (it will not be shown again).
+
+> [!IMPORTANT]
+> Note down your **Canvas Domain**. This is the web address of your institution's Canvas platform, for example: `myschool.instructure.com`.
+
+### Token Auto-Renewal
+
+If your institution enforces token expiration, the server checks the active token's expiry before each request and automatically regenerates and persists it once it is within 24 hours of expiring.
+
+Toggles & Tuning:
+- `CANVAS_TOKEN_AUTO_RENEW=false` — Disable automatic token regeneration.
+- `CANVAS_TOKEN_RENEW_THRESHOLD_HOURS=48` — Change the renewal threshold window (default: `24` hours).
 
 ---
 
-## Supported Tools & Resources
+## Transports
 
-<details>
-<summary><b>View all 111 tools organized by category</b></summary>
+The server supports two transport modes:
 
-### Tool Inventory
+### stdio (default)
+
+```bash
+npx @charlie.act7/canvas-mcp-server@latest
+```
+
+Used by desktop applications and CLI tools (Claude Desktop, Claude Code, Cursor, Codex).
+
+### HTTP Server / Fastify REST API
+
+```bash
+npx @charlie.act7/canvas-mcp-server serve-http --port 3000 --host 0.0.0.0
+```
+
+Optionally pass `--port <port>` (default `3000`) and `--host <host>` (default `0.0.0.0` or `127.0.0.1`).
+
+---
+
+## Use Cases & Prompts
+
+> [!TIP]
+> **Token Saving & Efficiency:** Whenever possible, specify the Canvas ID or the direct Canvas URL (e.g., `https://[your_institution].instructure.com/courses/[course_id]/assignments/[assignment_id]`) in your prompts. This prevents the AI from scanning all your courses/resources, leading to faster responses and substantial token savings.
+
+### 📖 Course Auditing & Querying
+- 💬 *"What active courses do I have this semester? Check if there are multiple active sections/parallels."*
+- 💬 *"Show me all ungraded submissions for 'Essay 1: Introduction to Sociology' in Sociology 101."*
+- 💬 *"Who is in Student Group A for the Chemistry class?"*
+- 💬 *"Does the assignment 'Project Proposal' have an active rubric associated? If so, retrieve its criteria."*
+- 💬 *"Search for everything related to 'photosynthesis' across my Biology course — assignments, pages, and discussions."*
+
+### ✍️ Creating & Organizing Course Content
+- 💬 *"Create a new module named 'Week 1: Foundations' in my course."*
+- 💬 *"Add a SubHeader 'REQUIRED READINGS' inside the 'Week 1' module, and link the syllabus page to it."*
+- 💬 *"In my Business course, create an assignment called 'Case Study 1: Market Analysis'. Add an instructions table with columns for Criteria, Requirements, and Points."*
+- 💬 *"Create a threaded discussion topic in my course titled 'Weekly Reflection' and pin it to the top."*
+
+### 💯 Grading & Absence Management
+- 💬 *"For assignment 'Case Study 1', find all students who haven't submitted their work. Assign them a grade of 0 and add the comment: 'Activity not submitted.'"*
+- 💬 *"Grade John's submission for 'Essay 1' with a 90 based on the rubric, and add feedback."*
+
+### 📊 Student Engagement & Analytics
+- 💬 *"Show me the activity analytics for my Calculus course — how active have students been this week?"*
+- 💬 *"Which students haven't been active in course 12345 in the last few days?"*
+
+### 💬 Messaging & Communication
+- 💬 *"Send a private message to student [ID] reminding them their 'Project Proposal' is due tomorrow."*
+- 💬 *"How many unread messages do I have in my Canvas inbox?"*
+
+---
+
+## Tools
+
+The Canvas MCP Server exposes **117 tools** organized into 21 functional categories:
 
 | Category | Tools | Description |
 |---|---|---|
 | **Courses** | `list_courses` · `create_course` · `update_course` · `get_syllabus` | Manage and configure courses |
 | **Modules** | `list_modules` · `create_module` · `update_module` · `delete_module` · `create_module_item` · `update_module_item` · `delete_module_item` | Full CRUD for modules and their items |
-| **Pages** | `list_pages` · `get_page_content` · `create_page` · `update_page` · `delete_page` | Manage wiki pages |
+| **Pages** | `list_pages` · `get_page_content` · `create_page` · `update_page` · `delete_page` | Wiki page publishing & editing |
 | **Files & Folders** | `list_files` · `upload_file` · `update_file` · `delete_file` · `list_folders` · `create_folder` · `update_folder` · `delete_folder` | File management with folder support |
 | **Assignments** | `get_assignments` · `get_assignment` · `create_assignment` · `update_assignment` · `delete_assignment` · `update_assignment_dates` · `bulk_update_due_dates` · `list_assignment_groups` | Full assignment lifecycle |
 | **Submissions** | `get_submissions` · `get_submission` · `get_submission_comments` · `delete_submission_comment` · `submit_assignment` | View and manage student submissions |
 | **Grading** | `grade_submission` · `grade_multiple_submissions` · `audit_course` | Grade individually or in bulk |
 | **Rubrics** | `list_rubrics` · `get_rubric` · `create_rubric` · `update_rubric` · `create_rubric_association` | Build and attach grading rubrics |
-| **Quizzes (Classic)** | `list_quizzes` · `get_quiz` · `create_quiz` · `update_quiz` · `update_quiz_dates` · `list_quiz_questions` · `get_quiz_question` · `create_quiz_question` · `update_quiz_question` · `delete_quiz_question` · `create_quiz_group` | Classic Canvas quiz engine |
+| **Classic Quizzes** | `list_quizzes` · `get_quiz` · `create_quiz` · `update_quiz` · `update_quiz_dates` · `list_quiz_questions` · `get_quiz_question` · `create_quiz_question` · `update_quiz_question` · `delete_quiz_question` · `create_quiz_group` | Classic Canvas quiz engine |
 | **New Quizzes (LTI)** | `create_new_quiz` · `update_new_quiz` · `delete_new_quiz` · `list_new_quiz_items` · `get_new_quiz_item` · `create_new_quiz_item` · `update_new_quiz_item` · `delete_new_quiz_item` | Modern LTI quiz engine (`/api/quiz/v1`) |
 | **Students** | `list_students` · `list_students_with_grades` · `get_student_grades` · `get_student_assignments` · `list_assignment_due_dates` | Roster and progress tracking |
 | **Enrollments** | `list_course_enrollments` · `enroll_user` · `remove_enrollment` · `get_user` · `get_profile` · `search_users` | Manage who is in your course |
@@ -190,46 +303,67 @@ This will guide you step-by-step to input your domain and API token, storing the
 | **Calendar** | `list_appointment_groups` · `get_appointment_group` · `create_appointment_group` · `update_appointment_group` · `delete_appointment_group` · `list_appointment_group_users` · `list_appointment_group_groups` · `get_next_appointment` | Scheduling and appointments |
 | **Analytics** | `get_course_analytics` · `get_student_analytics` · `get_course_activity_stream` · `search_course_content` | Engagement data and content search |
 | **Peer Reviews** | `list_peer_reviews` · `get_submission_peer_reviews` · `create_peer_review` · `delete_peer_review` | Configure and manage peer assessments |
-| **Health & Config** | `health_check` · `set_canvas_config` | Verify connection and update credentials at runtime |
-
-### Supported MCP Resources
-For clients supporting direct resources:
-* `canvas://courses/{id}/readme` — Formatted course summary.
-* `canvas://courses/{id}/pages/{slug}` — Direct HTML content of Canvas pages.
-</details>
+| **Access Tokens** | `list_access_tokens` · `get_access_token` · `create_access_token` · `update_access_token` · `regenerate_access_token` · `delete_access_token` | Manage Canvas API tokens with auto-renewal |
+| **Health & Config** | `health_check` · `set_canvas_config` | Connection checks & runtime configuration updates |
 
 ---
 
-## LLM / AI Client Integration
+## Resources
 
-For detailed integration instructions covering Cursor, GitHub Copilot, Cline, OpenAI Custom GPTs, and self-hosted setups, see [`llms-install.md`](llms-install.md).
+Supported native MCP resources:
+
+| Resource URI | Description |
+|---|---|
+| `canvas://courses/{id}/readme` | Formatted Markdown course summary |
+| `canvas://courses/{id}/pages/{slug}` | Direct HTML content of Canvas pages |
 
 ---
 
-## Local Development
+## Configuration Reference
 
-To clone this repository and modify the code:
+All configuration parameters can be passed as environment variables or stored via CLI configuration (`npx @charlie.act7/canvas-mcp-server config`).
 
-1. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
-2. **Build the Project (TypeScript to JavaScript):**
-   ```bash
-   npm run build
-   ```
-3. **Start Server in Stdio Mode (MCP):**
-   ```bash
-   npm start
-   ```
-4. **Start HTTP Server with Swagger Documentation:**
-   If you want to use this as an OpenAI GPT Custom Action, spin up the web server with:
-   ```bash
-   npm run start:http
-   ```
-   Then visit `http://localhost:3000` to view the interactive Swagger interface.
+| Env Var | Default | Purpose |
+|---|---|---|
+| `CANVAS_API_TOKEN` | _(unset)_ | Canvas LMS API access token. |
+| `CANVAS_API_DOMAIN` | _(unset)_ | Domain of your Canvas LMS instance (e.g. `myschool.instructure.com`). |
+| `CANVAS_TOKEN_AUTO_RENEW` | `true` | Automatically regenerate expiring access tokens before expiration. |
+| `CANVAS_TOKEN_RENEW_THRESHOLD_HOURS` | `24` | Threshold in hours before token expiry to trigger auto-renewal. |
+| `PORT` / `HTTP_PORT` | `3000` | HTTP port when running `serve-http`. |
+| `HTTP_HOST` | `0.0.0.0` | Host interface binding for HTTP server mode. |
+| `GEMINI_API_KEY` | _(unset)_ | (Optional) Gemini API key for local LLM bridge / script utilities. |
+| `OLLAMA_HOST` | `http://localhost:11434` | (Optional) Local Ollama host address for local model bridge. |
+
+---
+
+## Development
+
+```bash
+npm run build      # Compile TypeScript source code (tsc)
+npm run dev        # Watch mode compilation (tsc --watch)
+npm start          # Run MCP server in stdio mode
+npm run start:http # Run HTTP server with Swagger UI at http://localhost:3000
+npm run chat       # Launch interactive Ollama bridge test CLI
+```
+
+### Source Layout
+
+- `src/index.ts` — CLI entry point (Commander), stdio MCP server bootstrap
+- `src/http-server.ts` — Fastify HTTP server, Swagger / OpenAPI route definitions
+- `src/common/` — `canvas-client.ts` (API client & token auto-renewal), `config.ts` (`conf` manager), `types.ts`
+- `src/tools/` — 117+ tool implementations divided by functional module
+- `src/resources/` — MCP resource providers (`canvas://`)
+- `src/prompts/` — MCP prompt templates
+
+---
+
+## Documentation
+
+- [`README.es.md`](./README.es.md) — Versión en Español del README.
+- [`llms-install.md`](./llms-install.md) — Detailed guide for client integration (Cursor, Copilot, Custom GPTs).
 
 ---
 
 ## License
-This project is licensed under the MIT License. Created by [Charlie Cárdenas Toledo](https://github.com/CharlieCardenasToledo).
+
+This project is licensed under the **MIT License**. Created by [Charlie Cárdenas Toledo](https://github.com/CharlieCardenasToledo).

@@ -38,6 +38,7 @@ import { conversationTools } from "./tools/conversation-tools.js";
 import { newQuizTools } from "./tools/new-quiz-tools.js";
 import { analyticsTools } from "./tools/analytics-tools.js";
 import { peerReviewTools } from "./tools/peer-review-tools.js";
+import { accessTokenTools } from "./tools/access-token-tools.js";
 import { canvasResources } from "./resources/canvas-resources.js";
 import { canvasPrompts } from "./prompts/canvas-prompts.js";
 import { ToolDefinition } from "./common/tool-model.js";
@@ -107,7 +108,16 @@ function getClient(): CanvasClient {
         console.error(`Please run ${chalk.cyan("canvas-mcp config")} or set env vars.`);
         process.exit(1);
     }
-    return new CanvasClient(token, domain);
+    return new CanvasClient(token, domain, {
+        autoRenewToken: process.env.CANVAS_TOKEN_AUTO_RENEW !== "false",
+        renewThresholdHours: process.env.CANVAS_TOKEN_RENEW_THRESHOLD_HOURS
+            ? Number.parseFloat(process.env.CANVAS_TOKEN_RENEW_THRESHOLD_HOURS)
+            : undefined,
+        onTokenRenewed: (newToken: string) => {
+            configManager.set("CANVAS_API_TOKEN", newToken);
+            console.error(chalk.green("Canvas access token auto-renewed and persisted."));
+        }
+    });
 }
 
 // NOTE: We could keep CLI commands for grading/auditing here calling the client directly,
@@ -153,7 +163,8 @@ program
             ...conversationTools,
             ...newQuizTools,
             ...analyticsTools,
-            ...peerReviewTools
+            ...peerReviewTools,
+            ...accessTokenTools
         ]);
 
         // --- Tool Handlers ---
@@ -237,7 +248,8 @@ program
             ...conversationTools,
             ...newQuizTools,
             ...analyticsTools,
-            ...peerReviewTools
+            ...peerReviewTools,
+            ...accessTokenTools
         ]);
         await startHttpServer(client, options.host, port, allTools);
     });

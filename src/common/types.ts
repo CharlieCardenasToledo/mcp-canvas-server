@@ -420,3 +420,19 @@ export interface AppointmentGroup {
     participant_visibility?: 'private' | 'protected';
     participant_type?: 'User' | 'Group';
 }
+
+export interface AccessToken {
+    id: number;
+    created_at: string;
+    expires_at: string | null;
+    workflow_state: 'active' | 'pending' | 'disabled' | 'deleted';
+    remember_access?: boolean;
+    scopes?: string[];
+    real_user_id?: number | null;
+    token?: string; // only present in create/regenerate responses
+    token_hint: string;
+    user_id: number;
+    purpose: string | null;
+    app_name?: string;
+    can_manually_regenerate?: boolean;
+}
