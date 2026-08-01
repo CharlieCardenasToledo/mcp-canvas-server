@@ -32,6 +32,28 @@ export const studentTools: ToolDefinition[] = [
                     }
                 },
                 required: ["course_id"]
+            },
+            outputSchema: {
+                type: "object",
+                properties: {
+                    students: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                student_id: { type: "number" },
+                                student_name: { type: "string" },
+                                email: { type: "string" },
+                                current_grade: { type: "string" },
+                                final_grade: { type: "string" },
+                                current_score: { type: "number" },
+                                final_score: { type: "number" }
+                            }
+                        }
+                    },
+                    total: { type: "number" }
+                },
+                required: ["students", "total"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
@@ -40,7 +62,8 @@ export const studentTools: ToolDefinition[] = [
             const students = await client.getEnrollments(courseId);
             const rows = students.map(pickStudentGradeInfo);
             return {
-                content: [{ type: "text", text: JSON.stringify(rows, null, 2) }]
+                content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+                structuredContent: { students: rows, total: rows.length }
             };
         }
     },
@@ -62,6 +85,19 @@ export const studentTools: ToolDefinition[] = [
                     }
                 },
                 required: ["course_id", "student_id"]
+            },
+            outputSchema: {
+                type: "object",
+                properties: {
+                    student_id: { type: "number" },
+                    student_name: { type: "string" },
+                    email: { type: "string" },
+                    current_grade: { type: "string" },
+                    final_grade: { type: "string" },
+                    current_score: { type: "number" },
+                    final_score: { type: "number" }
+                },
+                required: ["student_id", "student_name"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
@@ -75,9 +111,11 @@ export const studentTools: ToolDefinition[] = [
             const courseId = await resolveCourseId(client, input.course_id);
             const studentId = await resolveStudentId(client, courseId, input.student_id);
             const student = await client.getStudentInCourse(courseId, studentId);
+            const gradeInfo = pickStudentGradeInfo(student);
 
             return {
-                content: [{ type: "text", text: JSON.stringify(pickStudentGradeInfo(student), null, 2) }]
+                content: [{ type: "text", text: JSON.stringify(gradeInfo, null, 2) }],
+                structuredContent: gradeInfo
             };
         }
     },

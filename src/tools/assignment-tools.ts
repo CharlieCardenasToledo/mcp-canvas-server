@@ -34,6 +34,28 @@ export const assignmentTools: ToolDefinition[] = [
                     }
                 },
                 required: ["course_id"]
+            },
+            outputSchema: {
+                type: "object",
+                properties: {
+                    assignments: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                id: { type: "number" },
+                                name: { type: "string" },
+                                due_at: { type: "string" },
+                                unlock_at: { type: "string" },
+                                lock_at: { type: "string" },
+                                points_possible: { type: "number" },
+                                published: { type: "boolean" }
+                            }
+                        }
+                    },
+                    total: { type: "number" }
+                },
+                required: ["assignments", "total"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
@@ -60,13 +82,16 @@ export const assignmentTools: ToolDefinition[] = [
                 return new Date(a.due_at) >= now;
             });
 
+            const sliced = filtered.slice(0, limit);
+
             if (input.full) {
                 return {
-                    content: [{ type: "text", text: JSON.stringify(filtered.slice(0, limit), null, 2) }]
+                    content: [{ type: "text", text: JSON.stringify(sliced, null, 2) }],
+                    structuredContent: { assignments: sliced, total: sliced.length }
                 };
             }
 
-            const compact = filtered.slice(0, limit).map((a) => ({
+            const compact = sliced.map((a) => ({
                 id: a.id ?? null,
                 name: a.name,
                 due_at: a.due_at ?? null,
@@ -77,7 +102,8 @@ export const assignmentTools: ToolDefinition[] = [
             }));
 
             return {
-                content: [{ type: "text", text: JSON.stringify(compact, null, 2) }]
+                content: [{ type: "text", text: JSON.stringify(compact, null, 2) }],
+                structuredContent: { assignments: compact, total: compact.length }
             };
         }
     },

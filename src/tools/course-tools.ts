@@ -9,12 +9,33 @@ export const courseTools: ToolDefinition[] = [
         tool: {
             name: "canvas_list_courses",
             description: "List active courses for the current user in Canvas",
-            inputSchema: { type: "object", properties: {} }
+            inputSchema: { type: "object", properties: {} },
+            outputSchema: {
+                type: "object",
+                properties: {
+                    courses: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                id: { type: "number" },
+                                name: { type: "string" },
+                                course_code: { type: "string" },
+                                workflow_state: { type: "string" },
+                                start_at: { type: "string" },
+                                end_at: { type: "string" }
+                            }
+                        }
+                    }
+                },
+                required: ["courses"]
+            }
         },
         handler: async (client: CanvasClient, _args: any) => {
             const courses = await client.getCourses();
             return {
-                content: [{ type: "text", text: JSON.stringify(courses, null, 2) }]
+                content: [{ type: "text", text: JSON.stringify(courses, null, 2) }],
+                structuredContent: { courses }
             };
         }
     },
