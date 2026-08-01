@@ -324,12 +324,15 @@ export class CanvasClient {
         return links;
     }
 
-    private async getAllPages<T>(initialUrl: string, params?: Record<string, any>): Promise<T[]> {
+    private async getAllPages<T>(initialUrl: string, params?: Record<string, any>, signal?: AbortSignal): Promise<T[]> {
         let allResults: T[] = [];
         let nextUrl: string | null = initialUrl;
         let pages = 0;
 
         while (nextUrl) {
+            if (signal?.aborted) {
+                throw new CanvasApiError("network", "Canvas request cancelled.");
+            }
             if (pages >= this.maxPages) {
                 throw new CanvasApiError(
                     "pagination_limit",
@@ -339,7 +342,8 @@ export class CanvasClient {
             pages += 1;
 
             const response: AxiosResponse<T[]> = await this.client.get(nextUrl, {
-                params: nextUrl === initialUrl ? params : undefined
+                params: nextUrl === initialUrl ? params : undefined,
+                signal
             });
 
             if (response.data) {
