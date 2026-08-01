@@ -4,7 +4,11 @@ const packageJson = JSON.parse(await readFile(new URL("../package.json", import.
 const expectedTag = `v${packageJson.version}`;
 const suppliedTag = process.env.RELEASE_TAG || process.argv[2];
 
-if (suppliedTag && suppliedTag !== expectedTag) {
+// Release Please uses "<package-name>-v<version>" for scoped packages.
+// Accept both "v1.2.3" and "@scope/pkg-v1.2.3" as equivalent.
+const normalizedTag = suppliedTag ? suppliedTag.replace(/^.*-v/, "v") : suppliedTag;
+
+if (normalizedTag && normalizedTag !== expectedTag) {
     throw new Error(`Release tag ${suppliedTag} does not match package version ${expectedTag}.`);
 }
 
