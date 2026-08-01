@@ -1,0 +1,60 @@
+name: Publish to npm
+
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Git tag to publish (e.g. @charlie.act7/canvas-mcp-server-v1.3.0)"
+                required: true
+                type: string
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        environment: npm
+        permissions:
+            contents: read
+            id-token: write
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ inputs.tag }}
+
+            - name: Setup Node.js 24
+              uses: actions/setup-node@v7
+              with:
+                  node-version: "24"
+                  registry-url: "https://registry.npmjs.org"
+                  cache: npm
+
+            - name: Upgrade npm (OIDC Trusted Publishing requires npm 11+)
+              run: npm install -g npm@latest
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Quality gate (lint, typecheck, tests, build)
+              # format:check is excluded: CHANGELOG.md is auto-generated and
+              # format was already validated on main before the tag was created.
+              run: npm run lint && npm run typecheck && npm test && npm run build
+
+            - name: Validate release metadata
+              run: RELEASE_TAG=${{ inputs.tag }} npm run release:check
+
+            - name: Package tarball smoke
+              run: npm run package:smoke
+
+            - name: Check whether version already exists on npm
+              id: exists
+              run: |
+                  PACKAGE_NAME=$(jq -r .name package.json)
+                  PACKAGE_VERSION=$(jq -r .version package.json)
+                  if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" --silent > /dev/null 2>&1; then
+                      echo "exists=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "exists=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Publish to npm (Trusted Publishing OIDC)
+              if: steps.exists.outputs.exists != 'true'
+              run: npm publish --access public --provenance
