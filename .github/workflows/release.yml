@@ -51,7 +51,10 @@ jobs:
               run: npm ci
 
             - name: Quality gate
-              run: npm run check
+              # format:check is skipped here because the tagged commit may contain
+              # auto-generated files (CHANGELOG.md) that differ from Prettier's style.
+              # The full check (including format) already ran on main before this tag.
+              run: npm run lint && npm run typecheck && npm test && npm run build
 
             - name: Validate release metadata
               run: RELEASE_TAG=${{ needs.release.outputs.tag_name }} npm run release:check
