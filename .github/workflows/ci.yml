@@ -22,7 +22,7 @@ jobs:
                 node: [22, 24]
         runs-on: ${{ matrix.os }}
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
 
             - name: Setup Node.js ${{ matrix.node }}
               uses: actions/setup-node@v4
@@ -39,7 +39,7 @@ jobs:
     audit:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
 
             - name: Setup Node.js 22
               uses: actions/setup-node@v4
@@ -56,7 +56,7 @@ jobs:
     package-smoke:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v7
 
             - name: Setup Node.js 22
               uses: actions/setup-node@v4
