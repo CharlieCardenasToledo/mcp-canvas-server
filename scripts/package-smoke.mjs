@@ -13,7 +13,7 @@ const transport = new StdioClientTransport({
     env: {
         ...process.env,
         CANVAS_API_TOKEN: "smoke-test-token",
-        CANVAS_DOMAIN: "canvas.instructure.com"
+        CANVAS_API_DOMAIN: "canvas.instructure.com"
     },
     stderr: "pipe"
 });
