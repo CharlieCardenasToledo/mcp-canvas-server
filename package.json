@@ -53,20 +53,20 @@
     "author": "Charlie Cárdenas Toledo",
     "license": "MIT",
     "dependencies": {
-        "@fastify/swagger": "^9.5.2",
+        "@fastify/swagger": "^9.8.1",
         "@fastify/swagger-ui": "^6.1.1",
-        "@google/genai": "^2.8.0",
+        "@google/genai": "^2.13.0",
         "@modelcontextprotocol/sdk": "^1.30.0",
         "axios": "^1.19.0",
-        "chalk": "^5.3.0",
-        "commander": "^11.1.0",
-        "conf": "^12.0.0",
-        "dotenv": "^16.3.1",
+        "chalk": "^6.0.0",
+        "commander": "^15.0.0",
+        "conf": "^15.1.0",
+        "dotenv": "^17.4.2",
         "fastify": "^5.11.0",
         "form-data": "^4.0.5",
-        "inquirer": "^9.2.12",
+        "inquirer": "^14.0.2",
         "ollama": "^0.6.3",
-        "zod": "^3.22.4"
+        "zod": "^4.4.3"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.2",
