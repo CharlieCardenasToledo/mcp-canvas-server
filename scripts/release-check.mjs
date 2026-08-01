@@ -6,29 +6,18 @@ const PACKAGE_NAME = /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/;
 
 function repositorySlug(repository) {
     const raw = typeof repository === "string" ? repository : repository?.url;
-    if (typeof raw !== "string" || raw.trim() === "") {
-        return null;
-    }
+    if (typeof raw !== "string" || raw.trim() === "") return null;
     const value = raw.trim().replace(/^git\+/, "");
     if (value.startsWith("git@github.com:")) {
         return value.slice("git@github.com:".length).replace(/\.git$/, "");
     }
     try {
         const url = new URL(value);
-        if (url.hostname.toLowerCase() !== "github.com") {
-            return null;
-        }
+        if (url.hostname.toLowerCase() !== "github.com") return null;
         return url.pathname.replace(/^\//, "").replace(/\.git$/, "");
     } catch {
         return null;
     }
-}
-
-// Normalize Release Please scoped tag "@scope/pkg-v1.2.3" → "v1.2.3"
-function normalizeTag(tag) {
-    if (!tag) return tag;
-    const match = tag.match(/-(v\d+\.\d+\.\d+)$/);
-    return match ? match[1] : tag;
 }
 
 export function validateReleaseMetadata(packageJson, releaseTag, githubRepository) {
@@ -41,16 +30,13 @@ export function validateReleaseMetadata(packageJson, releaseTag, githubRepositor
     if (typeof packageJson.version !== "string" || !STABLE_SEMVER.test(packageJson.version)) {
         throw new Error("Automated releases require a stable x.y.z package version");
     }
-    if (packageJson.private === true) {
-        throw new Error("A private package cannot be published");
-    }
+    if (packageJson.private === true) throw new Error("A private package cannot be published");
     if (packageJson.publishConfig?.access !== "public") {
         throw new Error('publishConfig.access must be "public"');
     }
 
     const expectedTag = `v${packageJson.version}`;
-    const normalizedTag = normalizeTag(releaseTag);
-    if (normalizedTag !== expectedTag) {
+    if (releaseTag !== expectedTag) {
         throw new Error(`Release tag must be ${expectedTag}; received ${releaseTag || "<empty>"}`);
     }
 

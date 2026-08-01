@@ -1,37 +1,34 @@
-import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import assert from "node:assert/strict";
+import path from "node:path";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-const projectRoot = fileURLToPath(new URL("..", import.meta.url));
-const packageJson = JSON.parse(await readFile(join(projectRoot, "package.json"), "utf8"));
-const npmCli = process.env.npm_execpath;
-if (!npmCli) {
-    throw new Error("npm_execpath is required. Run this smoke through npm run package:smoke.");
-}
+const entry = path.resolve(process.argv[2] ?? "dist/index.js");
+const expectedVersion = process.env.npm_package_version;
 
-const output = execFileSync(process.execPath, [npmCli, "pack", "--json", "--ignore-scripts"], {
-    cwd: projectRoot,
-    encoding: "utf8"
+const client = new Client({ name: "package-smoke", version: "1.0.0" });
+const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [entry],
+    env: {
+        ...process.env,
+        CANVAS_API_TOKEN: "smoke-test-token",
+        CANVAS_DOMAIN: "canvas.instructure.com"
+    },
+    stderr: "pipe"
 });
-const [{ filename }] = JSON.parse(output);
-const tarballPath = join(projectRoot, filename);
-const root = await mkdtemp(join(tmpdir(), "canvas-mcp-package-"));
 
 try {
-    execFileSync(process.execPath, [npmCli, "install", "--ignore-scripts", tarballPath], {
-        cwd: root,
-        stdio: "inherit"
-    });
-    const installed = JSON.parse(
-        await readFile(join(root, "node_modules", ...packageJson.name.split("/"), "package.json"), "utf8")
-    );
-    if (installed.version !== packageJson.version) {
-        throw new Error(`Installed version ${installed.version} does not match ${packageJson.version}.`);
-    }
-    console.log(`Package smoke test passed for ${packageJson.name}@${packageJson.version}.`);
+    await client.connect(transport);
+    const { tools } = await client.listTools();
+    const serverVersion = client.getServerVersion();
+
+    assert.equal(serverVersion?.name, "canvas-lms-server");
+    if (expectedVersion) assert.equal(serverVersion?.version, expectedVersion);
+    assert.ok(tools.length >= 50, `Expected at least 50 tools, received ${tools.length}`);
+    assert.ok(tools.some((t) => t.name === "canvas_list_courses"));
+    assert.ok(tools.some((t) => t.name === "canvas_get_assignments"));
+    console.log(`Package smoke passed: ${serverVersion?.version}, ${tools.length} tools`);
 } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(tarballPath, { force: true });
+    await client.close();
 }
