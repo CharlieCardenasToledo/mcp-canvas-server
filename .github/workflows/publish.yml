@@ -39,7 +39,15 @@ jobs:
               run: npm run lint && npm run typecheck && npm test && npm run build
 
             - name: Validate release metadata
-              run: RELEASE_TAG=${{ inputs.tag }} npm run release:check
+              run: |
+                  PACKAGE_VERSION=$(jq -r .version package.json)
+                  # Normalize tag: "@scope/pkg-v1.2.3" or "v1.2.3" → "1.2.3"
+                  TAG_VERSION=$(echo "${{ inputs.tag }}" | sed 's/.*-v//' | sed 's/^v//')
+                  if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+                      echo "Tag ${{ inputs.tag }} does not match package version $PACKAGE_VERSION"
+                      exit 1
+                  fi
+                  echo "Version validated: $PACKAGE_VERSION"
 
             - name: Package tarball smoke
               run: npm run package:smoke
