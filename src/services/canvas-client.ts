@@ -1,5 +1,58 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { Course, Module, Assignment, Quiz, Submission, User, Page, FileAttachment, Announcement, DiscussionTopic, DiscussionEntry, QuizQuestion, QuizQuestionAnswer, QuizGroup, Folder, AppointmentGroup, Enrollment, Conversation, ConversationMessage, NewQuiz, NewQuizItem, AccessToken } from '../common/types.js';
+import axios, { AxiosInstance, AxiosResponse } from "axios";
+import {
+    Course,
+    Module,
+    Assignment,
+    Quiz,
+    Submission,
+    User,
+    Page,
+    FileAttachment,
+    Announcement,
+    DiscussionTopic,
+    DiscussionEntry,
+    QuizQuestion,
+    QuizQuestionAnswer,
+    QuizGroup,
+    Folder,
+    AppointmentGroup,
+    Enrollment,
+    Conversation,
+    ConversationMessage,
+    NewQuiz,
+    NewQuizItem,
+    AccessToken
+} from "../common/types.js";
+
+export type CanvasApiErrorKind =
+    | "network"
+    | "timeout"
+    | "auth"
+    | "not_found"
+    | "rate_limited"
+    | "server"
+    | "client"
+    | "pagination_limit"
+    | "unsafe_domain";
+
+export class CanvasApiError extends Error {
+    readonly kind: CanvasApiErrorKind;
+    readonly status?: number;
+
+    constructor(kind: CanvasApiErrorKind, message: string, status?: number) {
+        super(sanitizeErrorMessage(message));
+        this.name = "CanvasApiError";
+        this.kind = kind;
+        this.status = status;
+    }
+}
+
+function sanitizeErrorMessage(message: string): string {
+    return message.replace(/Bearer\s+\S+/gi, "Bearer [redacted]").slice(0, 1000);
+}
+
+const IDEMPOTENT_METHODS = new Set(["get", "head", "options", "put", "delete"]);
+const RETRYABLE_STATUSES = new Set([429, 502, 503, 504]);
 
 export interface CanvasClientOptions {
     /** Proactively regenerate the active access token before it expires. Default: true. */
@@ -8,6 +61,63 @@ export interface CanvasClientOptions {
     renewThresholdHours?: number;
     /** Called with the new token value whenever auto-renew regenerates it, so it can be persisted. */
     onTokenRenewed?: (newToken: string) => void;
+    /** Request timeout in milliseconds. Default: 30000 or CANVAS_REQUEST_TIMEOUT_MS. */
+    timeoutMs?: number;
+    /** Maximum retries for idempotent requests that hit 429/502/503/504. Default: 3. */
+    maxRetries?: number;
+    /** Maximum pages followed by paginated listings before failing. Default: 50. */
+    maxPages?: number;
+    /** Allow non-HTTPS schemes and self-hosted domains that would otherwise be rejected. Default: false. */
+    allowInsecureScheme?: boolean;
+}
+
+interface NormalizedDomain {
+    origin: string;
+    scheme: string;
+    authority: string;
+}
+
+function normalizeDomain(domain: string, allowInsecureScheme: boolean): NormalizedDomain {
+    const trimmed = domain.trim().replace(/\/+$/, "");
+    let parsed: URL;
+    try {
+        parsed = new URL(
+            trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : `https://${trimmed}`
+        );
+    } catch {
+        throw new CanvasApiError("unsafe_domain", `Invalid Canvas domain: ${trimmed}`);
+    }
+
+    if (!allowInsecureScheme && parsed.protocol !== "https:") {
+        throw new CanvasApiError(
+            "unsafe_domain",
+            `Canvas domain must use HTTPS (${trimmed}). Self-hosted instances must opt in with allowInsecureScheme.`
+        );
+    }
+    if (parsed.username || parsed.password) {
+        throw new CanvasApiError("unsafe_domain", "Canvas domain must not contain embedded credentials.");
+    }
+    if (parsed.pathname !== "" && parsed.pathname !== "/") {
+        throw new CanvasApiError("unsafe_domain", "Canvas domain must be a bare origin without a path.");
+    }
+
+    return {
+        origin: parsed.origin,
+        scheme: parsed.protocol.replace(":", ""),
+        authority: parsed.host
+    };
+}
+
+function envInteger(name: string, fallback: number, minimum = 1): number {
+    const raw = process.env[name];
+    if (raw === undefined) return fallback;
+    const value = Number.parseInt(raw, 10);
+    if (!Number.isSafeInteger(value) || value < minimum) return fallback;
+    return value;
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class CanvasClient {
@@ -15,42 +125,55 @@ export class CanvasClient {
     private quizClient: AxiosInstance;
     private token: string;
     private domain: string;
+    private readonly origin: string;
 
     private readonly autoRenewToken: boolean;
     private readonly renewThresholdMs: number;
     private readonly onTokenRenewed?: (newToken: string) => void;
+    private readonly timeoutMs: number;
+    private readonly maxRetries: number;
+    private readonly maxPages: number;
     private readonly tokenMetaCacheMs = 15 * 60 * 1000;
     private tokenMeta: { id: number; expiresAtMs: number | null } | null = null;
     private tokenMetaCheckedAt = 0;
     private isCheckingToken = false;
 
     constructor(token: string, domain: string, options: CanvasClientOptions = {}) {
+        const normalized = normalizeDomain(domain, options.allowInsecureScheme ?? false);
         this.token = token;
-        this.domain = domain;
+        this.domain = normalized.origin;
+        this.origin = normalized.origin;
         this.autoRenewToken = options.autoRenewToken ?? true;
         this.renewThresholdMs = (options.renewThresholdHours ?? 24) * 60 * 60 * 1000;
         this.onTokenRenewed = options.onTokenRenewed;
-        this.client = this.createAxiosInstance(token, domain);
-        this.quizClient = this.createAxiosInstance(token, domain, 'api/quiz/v1');
+        this.timeoutMs = options.timeoutMs ?? envInteger("CANVAS_REQUEST_TIMEOUT_MS", 30_000);
+        this.maxRetries = options.maxRetries ?? envInteger("CANVAS_MAX_RETRIES", 3);
+        this.maxPages = options.maxPages ?? envInteger("CANVAS_MAX_PAGES", 50);
+        this.client = this.createAxiosInstance(token, normalized, "api/v1");
+        this.quizClient = this.createAxiosInstance(token, normalized, "api/quiz/v1");
         this.attachAutoRenewInterceptor();
     }
 
-    private createAxiosInstance(token: string, domain: string, apiPath = 'api/v1'): AxiosInstance {
-        const baseURL = `https://${domain}/${apiPath}`;
-        return axios.create({
+    private createAxiosInstance(token: string, domain: NormalizedDomain, apiPath = "api/v1"): AxiosInstance {
+        const baseURL = `${domain.scheme}://${domain.authority}/${apiPath}`;
+        const instance = axios.create({
             baseURL,
+            timeout: this.timeoutMs,
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json"
             }
         });
+        this.attachResponseInterceptor(instance);
+        return instance;
     }
 
     public updateConfig(token: string, domain: string): void {
+        const normalized = normalizeDomain(domain, false);
         this.token = token;
-        this.domain = domain;
-        this.client = this.createAxiosInstance(token, domain);
-        this.quizClient = this.createAxiosInstance(token, domain, 'api/quiz/v1');
+        this.domain = normalized.origin;
+        this.client = this.createAxiosInstance(token, normalized, "api/v1");
+        this.quizClient = this.createAxiosInstance(token, normalized, "api/quiz/v1");
         this.tokenMeta = null;
         this.tokenMetaCheckedAt = 0;
         this.attachAutoRenewInterceptor();
@@ -65,10 +188,79 @@ export class CanvasClient {
         });
     }
 
+    private computeRetryDelay(retryAfterHeader: unknown, retryCount: number): number {
+        const baseDelayMs = 500 * 2 ** retryCount;
+        const jitter = Math.floor(Math.random() * 250);
+        if (typeof retryAfterHeader === "string") {
+            const seconds = Number.parseInt(retryAfterHeader, 10);
+            if (Number.isSafeInteger(seconds) && seconds >= 0) {
+                return Math.min(seconds * 1000, 30_000);
+            }
+        }
+        return baseDelayMs + jitter;
+    }
+
+    private attachResponseInterceptor(instance: AxiosInstance): void {
+        instance.interceptors.response.use(undefined, async (error: unknown) => {
+            const axiosError = error as {
+                config?: any;
+                response?: { status: number; data?: any; headers?: Record<string, unknown> };
+                code?: string;
+            };
+            const config = axiosError.config;
+            const status = axiosError.response?.status;
+            const method = (config?.method ?? "get").toLowerCase();
+            const retryCount = config?.__canvasRetryCount ?? 0;
+            const retryable =
+                IDEMPOTENT_METHODS.has(method) &&
+                typeof status === "number" &&
+                RETRYABLE_STATUSES.has(status) &&
+                retryCount < this.maxRetries;
+
+            if (retryable) {
+                const retryAfter = axiosError.response?.headers?.["retry-after"];
+                await sleep(this.computeRetryDelay(retryAfter, retryCount));
+                const nextConfig = { ...config, __canvasRetryCount: retryCount + 1 };
+                return instance.request(nextConfig);
+            }
+
+            throw this.classifyError(axiosError);
+        });
+    }
+
+    private classifyError(error: {
+        response?: { status: number; data?: any };
+        code?: string;
+        message?: string;
+    }): CanvasApiError {
+        const status = error.response?.status;
+        const message = error.response?.data?.message ?? error.message ?? "Canvas request failed";
+
+        if (error.code === "ECONNABORTED" || error.code === "ETIMEDOUT") {
+            return new CanvasApiError("timeout", `Canvas request timed out.`, status);
+        }
+        if (!status) {
+            return new CanvasApiError("network", `Canvas network error: ${message}`, status);
+        }
+        if (status === 401 || status === 403) {
+            return new CanvasApiError("auth", `Canvas authorization failed (${status}).`, status);
+        }
+        if (status === 404) {
+            return new CanvasApiError("not_found", `Canvas resource not found (404).`, status);
+        }
+        if (status === 429) {
+            return new CanvasApiError("rate_limited", `Canvas rate limit reached (429).`, status);
+        }
+        if (status >= 500) {
+            return new CanvasApiError("server", `Canvas server error (${status}).`, status);
+        }
+        return new CanvasApiError("client", `Canvas client error (${status}): ${message}`, status);
+    }
+
     private applyNewToken(newToken: string): void {
         this.token = newToken;
-        this.client.defaults.headers['Authorization'] = `Bearer ${newToken}`;
-        this.quizClient.defaults.headers['Authorization'] = `Bearer ${newToken}`;
+        this.client.defaults.headers["Authorization"] = `Bearer ${newToken}`;
+        this.quizClient.defaults.headers["Authorization"] = `Bearer ${newToken}`;
     }
 
     // Canvas only returns the full token value on creation/regeneration, never on list/get.
@@ -77,8 +269,8 @@ export class CanvasClient {
     private async refreshTokenMeta(): Promise<void> {
         this.isCheckingToken = true;
         try {
-            const tokens = await this.getAllPages<AccessToken>('users/self/user_generated_tokens', { per_page: 100 });
-            const match = tokens.find(t => t.token_hint && this.token.includes(t.token_hint));
+            const tokens = await this.getAllPages<AccessToken>("users/self/user_generated_tokens", { per_page: 100 });
+            const match = tokens.find((t) => t.token_hint && this.token.includes(t.token_hint));
             this.tokenMeta = match
                 ? { id: match.id, expiresAtMs: match.expires_at ? new Date(match.expires_at).getTime() : null }
                 : null;
@@ -121,12 +313,12 @@ export class CanvasClient {
     private parseLinkHeader(header: string | undefined): Record<string, string> {
         if (!header) return {};
         const links: Record<string, string> = {};
-        const parts = header.split(',');
-        parts.forEach(part => {
-            const section = part.split(';');
+        const parts = header.split(",");
+        parts.forEach((part) => {
+            const section = part.split(";");
             if (section.length < 2) return;
-            const url = section[0].replace(/<(.*)>/, '$1').trim();
-            const name = section[1].replace(/rel="?([^"]+)"?/, '$1').trim();
+            const url = section[0].replace(/<(.*)>/, "$1").trim();
+            const name = section[1].replace(/rel="?([^"]+)"?/, "$1").trim();
             links[name] = url;
         });
         return links;
@@ -135,32 +327,62 @@ export class CanvasClient {
     private async getAllPages<T>(initialUrl: string, params?: Record<string, any>): Promise<T[]> {
         let allResults: T[] = [];
         let nextUrl: string | null = initialUrl;
+        let pages = 0;
 
         while (nextUrl) {
-            const response: AxiosResponse<T[]> = await this.client.get(nextUrl, { params: nextUrl === initialUrl ? params : undefined });
+            if (pages >= this.maxPages) {
+                throw new CanvasApiError(
+                    "pagination_limit",
+                    `Pagination limit reached (${this.maxPages} pages). Refine the query to reduce results.`
+                );
+            }
+            pages += 1;
+
+            const response: AxiosResponse<T[]> = await this.client.get(nextUrl, {
+                params: nextUrl === initialUrl ? params : undefined
+            });
 
             if (response.data) {
                 allResults = allResults.concat(response.data);
             }
 
-            const links = this.parseLinkHeader(response.headers['link']);
-            nextUrl = links['next'] || null;
+            const links = this.parseLinkHeader(response.headers["link"]);
+            const next = links["next"];
+            if (next) {
+                this.assertSameOrigin(next);
+            }
+            nextUrl = next || null;
         }
 
         return allResults;
     }
 
+    private assertSameOrigin(nextUrl: string): void {
+        let parsed: URL;
+        try {
+            parsed = new URL(nextUrl);
+        } catch {
+            throw new CanvasApiError("unsafe_domain", "Canvas pagination returned an invalid next URL.");
+        }
+        if (parsed.origin !== this.origin) {
+            throw new CanvasApiError(
+                "unsafe_domain",
+                `Canvas pagination link does not match the configured origin (${parsed.origin}).`
+            );
+        }
+    }
+
     async getCourses(): Promise<Course[]> {
-        return this.getAllPages<Course>('courses', {
-            include: ['term'],
-            enrollment_state: 'active',
+        return this.getAllPages<Course>("courses", {
+            include: ["term"],
+            enrollment_state: "active",
             per_page: 100
         });
     }
 
     async getModules(courseId: number): Promise<Module[]> {
         return this.getAllPages<Module>(`courses/${courseId}/modules`, {
-            include: ['items']
+            include: ["items"]
         });
     }
 
@@ -185,7 +407,7 @@ export class CanvasClient {
     async getAssignment(courseId: number, assignmentId: number): Promise<Assignment> {
         const response = await this.client.get<Assignment>(`courses/${courseId}/assignments/${assignmentId}`, {
             params: {
-                include: ['submission', 'rubric_settings', 'overrides']
+                include: ["submission", "rubric_settings", "overrides"]
             }
         });
         return response.data;
@@ -200,32 +422,41 @@ export class CanvasClient {
             lock_at?: string | null;
         }
     ): Promise<Assignment> {
-        const response = await this.client.put<Assignment>(
-            `courses/${courseId}/assignments/${assignmentId}`,
-            {
-                assignment: dates
-            }
-        );
+        const response = await this.client.put<Assignment>(`courses/${courseId}/assignments/${assignmentId}`, {
+            assignment: dates
+        });
         return response.data;
     }
 
-    async createAssignment(courseId: number, assignment: Partial<Assignment> & { name: string; submission_types?: string[]; grading_type?: string; assignment_group_id?: number; allowed_extensions?: string[] }): Promise<Assignment> {
-        const response = await this.client.post<Assignment>(
-            `courses/${courseId}/assignments`,
-            {
-                assignment: assignment
-            }
-        );
+    async createAssignment(
+        courseId: number,
+        assignment: Partial<Assignment> & {
+            name: string;
+            submission_types?: string[];
+            grading_type?: string;
+            assignment_group_id?: number;
+            allowed_extensions?: string[];
+        }
+    ): Promise<Assignment> {
+        const response = await this.client.post<Assignment>(`courses/${courseId}/assignments`, {
+            assignment: assignment
+        });
         return response.data;
     }
 
-    async updateAssignment(courseId: number, assignmentId: number, assignment: Partial<Assignment> & { submission_types?: string[]; grading_type?: string; assignment_group_id?: number; allowed_extensions?: string[] }): Promise<Assignment> {
-        const response = await this.client.put<Assignment>(
-            `courses/${courseId}/assignments/${assignmentId}`,
-            {
-                assignment: assignment
-            }
-        );
+    async updateAssignment(
+        courseId: number,
+        assignmentId: number,
+        assignment: Partial<Assignment> & {
+            submission_types?: string[];
+            grading_type?: string;
+            assignment_group_id?: number;
+            allowed_extensions?: string[];
+        }
+    ): Promise<Assignment> {
+        const response = await this.client.put<Assignment>(`courses/${courseId}/assignments/${assignmentId}`, {
+            assignment: assignment
+        });
         return response.data;
     }
 
@@ -243,18 +474,15 @@ export class CanvasClient {
             lock_at?: string | null;
         }
     ): Promise<Quiz> {
-        const response = await this.client.put<Quiz>(
-            `courses/${courseId}/quizzes/${quizId}`,
-            {
-                quiz: dates
-            }
-        );
+        const response = await this.client.put<Quiz>(`courses/${courseId}/quizzes/${quizId}`, {
+            quiz: dates
+        });
         return response.data;
     }
 
     async getSubmissions(courseId: number, assignmentId: number): Promise<Submission[]> {
         return this.getAllPages<Submission>(`courses/${courseId}/assignments/${assignmentId}/submissions`, {
-            include: ['user'],
+            include: ["user"],
             per_page: 100
         });
     }
@@ -291,7 +519,7 @@ export class CanvasClient {
         const url = `courses/${courseId}/assignments/${assignmentId}/submissions/${userId}`;
         const response = await this.client.get<Submission>(url, {
             params: {
-                include: ['submission_history', 'submission_comments', 'rubric_assessment', 'visibility', 'user']
+                include: ["submission_history", "submission_comments", "rubric_assessment", "visibility", "user"]
             }
         });
         return response.data;
@@ -299,8 +527,8 @@ export class CanvasClient {
 
     async getEnrollments(courseId: number): Promise<User[]> {
         return this.getAllPages<User>(`courses/${courseId}/users`, {
-            enrollment_type: ['student'],
-            include: ['email', 'enrollments'],
+            enrollment_type: ["student"],
+            include: ["email", "enrollments"],
             per_page: 100
         });
     }
@@ -308,7 +536,7 @@ export class CanvasClient {
     async getStudentInCourse(courseId: number, studentId: number): Promise<User> {
         const response = await this.client.get<User>(`courses/${courseId}/users/${studentId}`, {
             params: {
-                include: ['email', 'enrollments']
+                include: ["email", "enrollments"]
             }
         });
         return response.data;
@@ -317,7 +545,7 @@ export class CanvasClient {
     async getStudentCourseSubmissions(courseId: number, studentId: number): Promise<any[]> {
         return this.getAllPages<any>(`courses/${courseId}/students/submissions`, {
             student_ids: [studentId],
-            include: ['assignment'],
+            include: ["assignment"],
             per_page: 100
         });
     }
@@ -336,8 +564,8 @@ export class CanvasClient {
     }
 
     async getAnnouncements(courseIds: number[]): Promise<Announcement[]> {
-        return this.getAllPages<Announcement>('announcements', {
-            context_codes: courseIds.map(id => `course_${id}`)
+        return this.getAllPages<Announcement>("announcements", {
+            context_codes: courseIds.map((id) => `course_${id}`)
         });
     }
 
@@ -351,7 +579,6 @@ export class CanvasClient {
         await this.client.delete(url);
         return { deleted: true, comment_id: commentId };
     }
-
 
     async getDiscussionTopics(courseId: number): Promise<DiscussionTopic[]> {
         return this.getAllPages<DiscussionTopic>(`courses/${courseId}/discussion_topics`);
@@ -378,7 +605,11 @@ export class CanvasClient {
         return response.data;
     }
 
-    async updateAnnouncement(courseId: number, topicId: number, fields: { title?: string; message?: string }): Promise<DiscussionTopic> {
+    async updateAnnouncement(
+        courseId: number,
+        topicId: number,
+        fields: { title?: string; message?: string }
+    ): Promise<DiscussionTopic> {
         const url = `courses/${courseId}/discussion_topics/${topicId}`;
         const response = await this.client.put<DiscussionTopic>(url, fields);
         return response.data;
@@ -416,10 +647,9 @@ export class CanvasClient {
             answers?: QuizQuestionAnswer[];
         }
     ): Promise<QuizQuestion> {
-        const response = await this.client.post<QuizQuestion>(
-            `courses/${courseId}/quizzes/${quizId}/questions`,
-            { question: data }
-        );
+        const response = await this.client.post<QuizQuestion>(`courses/${courseId}/quizzes/${quizId}/questions`, {
+            question: data
+        });
         return response.data;
     }
 
@@ -471,22 +701,14 @@ export class CanvasClient {
         );
         return response.data.quiz_groups[0];
     }
-    async createPage(
-        courseId: number,
-        title: string,
-        body: string,
-        published: boolean = false
-    ): Promise<Page> {
-        const response = await this.client.post<Page>(
-            `courses/${courseId}/pages`,
-            {
-                wiki_page: {
-                    title,
-                    body,
-                    published
-                }
+    async createPage(courseId: number, title: string, body: string, published: boolean = false): Promise<Page> {
+        const response = await this.client.post<Page>(`courses/${courseId}/pages`, {
+            wiki_page: {
+                title,
+                body,
+                published
             }
-        );
+        });
         return response.data;
     }
 
@@ -499,33 +721,22 @@ export class CanvasClient {
             published?: boolean;
         }
     ): Promise<Page> {
-        const response = await this.client.put<Page>(
-            `courses/${courseId}/pages/${pageUrlOrId}`,
-            {
-                wiki_page: data
-            }
-        );
+        const response = await this.client.put<Page>(`courses/${courseId}/pages/${pageUrlOrId}`, {
+            wiki_page: data
+        });
         return response.data;
     }
 
     // --- Modules ---
 
-    async createModule(
-        courseId: number,
-        name: string,
-        published: boolean = false,
-        position?: number
-    ): Promise<Module> {
-        const response = await this.client.post<Module>(
-            `courses/${courseId}/modules`,
-            {
-                module: {
-                    name,
-                    published,
-                    position
-                }
+    async createModule(courseId: number, name: string, published: boolean = false, position?: number): Promise<Module> {
+        const response = await this.client.post<Module>(`courses/${courseId}/modules`, {
+            module: {
+                name,
+                published,
+                position
             }
-        );
+        });
         return response.data;
     }
 
@@ -546,37 +757,32 @@ export class CanvasClient {
         const hasArrays = data.prerequisite_module_ids !== undefined || data.completion_requirements !== undefined;
         if (hasArrays) {
             const params = new URLSearchParams();
-            if (data.name !== undefined) params.set('module[name]', data.name);
-            if (data.published !== undefined) params.set('module[published]', String(data.published));
-            if (data.position !== undefined) params.set('module[position]', String(data.position));
+            if (data.name !== undefined) params.set("module[name]", data.name);
+            if (data.published !== undefined) params.set("module[published]", String(data.published));
+            if (data.position !== undefined) params.set("module[position]", String(data.position));
             if (data.require_sequential_progress !== undefined) {
-                params.set('module[require_sequential_progress]', String(data.require_sequential_progress));
+                params.set("module[require_sequential_progress]", String(data.require_sequential_progress));
             }
             if (data.prerequisite_module_ids) {
                 for (const id of data.prerequisite_module_ids) {
-                    params.append('module[prerequisite_module_ids][]', String(id));
+                    params.append("module[prerequisite_module_ids][]", String(id));
                 }
             }
             if (data.completion_requirements) {
                 for (const req of data.completion_requirements) {
-                    params.append('module[completion_requirements][][id]', String(req.id));
-                    params.append('module[completion_requirements][][type]', req.type);
+                    params.append("module[completion_requirements][][id]", String(req.id));
+                    params.append("module[completion_requirements][][type]", req.type);
                     if (req.min_score !== undefined) {
-                        params.append('module[completion_requirements][][min_score]', String(req.min_score));
+                        params.append("module[completion_requirements][][min_score]", String(req.min_score));
                     }
                 }
             }
-            const response = await this.client.put<Module>(
-                `courses/${courseId}/modules/${moduleId}`,
-                params,
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
+            const response = await this.client.put<Module>(`courses/${courseId}/modules/${moduleId}`, params, {
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            });
             return response.data;
         }
-        const response = await this.client.put<Module>(
-            `courses/${courseId}/modules/${moduleId}`,
-            { module: data }
-        );
+        const response = await this.client.put<Module>(`courses/${courseId}/modules/${moduleId}`, { module: data });
         return response.data;
     }
 
@@ -591,7 +797,15 @@ export class CanvasClient {
         courseId: number,
         moduleId: number,
         item: {
-            type: 'Assignment' | 'Quiz' | 'File' | 'Page' | 'DiscussionTopic' | 'ExternalUrl' | 'ExternalTool' | 'SubHeader';
+            type:
+                | "Assignment"
+                | "Quiz"
+                | "File"
+                | "Page"
+                | "DiscussionTopic"
+                | "ExternalUrl"
+                | "ExternalTool"
+                | "SubHeader";
             content_id?: string | number;
             page_url?: string;
             title?: string;
@@ -601,12 +815,9 @@ export class CanvasClient {
             position?: number;
         }
     ): Promise<any> {
-        const response = await this.client.post(
-            `courses/${courseId}/modules/${moduleId}/items`,
-            {
-                module_item: item
-            }
-        );
+        const response = await this.client.post(`courses/${courseId}/modules/${moduleId}/items`, {
+            module_item: item
+        });
         return response.data;
     }
 
@@ -627,22 +838,19 @@ export class CanvasClient {
         // Use URLSearchParams when completion_requirement is present.
         if (data.completion_requirement) {
             const params = new URLSearchParams();
-            params.set('module_item[completion_requirement][type]', data.completion_requirement.type);
+            params.set("module_item[completion_requirement][type]", data.completion_requirement.type);
             const { completion_requirement, ...rest } = data;
             for (const [key, value] of Object.entries(rest)) {
                 if (value !== undefined) params.set(`module_item[${key}]`, String(value));
             }
-            const response = await this.client.put(
-                `courses/${courseId}/modules/${moduleId}/items/${itemId}`,
-                params,
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
+            const response = await this.client.put(`courses/${courseId}/modules/${moduleId}/items/${itemId}`, params, {
+                headers: { "Content-Type": "application/x-www-form-urlencoded" }
+            });
             return response.data;
         }
-        const response = await this.client.put(
-            `courses/${courseId}/modules/${moduleId}/items/${itemId}`,
-            { module_item: data }
-        );
+        const response = await this.client.put(`courses/${courseId}/modules/${moduleId}/items/${itemId}`, {
+            module_item: data
+        });
         return response.data;
     }
 
@@ -669,23 +877,20 @@ export class CanvasClient {
             preflightData.parent_folder_id = parentFolderId;
         }
 
-        const preflightResponse = await this.client.post(
-            `courses/${courseId}/files`,
-            preflightData
-        );
+        const preflightResponse = await this.client.post(`courses/${courseId}/files`, preflightData);
 
         const { upload_url, upload_params } = preflightResponse.data;
 
         // Step 2: Upload to S3 (or other storage)
         // Note: Using dynamic import for 'fs' and 'form-data' to avoid issues in some environments
-        const fs = await import('node:fs');
-        const FormData = (await import('form-data')).default;
+        const fs = await import("node:fs");
+        const FormData = (await import("form-data")).default;
 
         const form = new FormData();
         Object.entries(upload_params).forEach(([key, value]) => {
             form.append(key, value);
         });
-        form.append('file', fs.createReadStream(filePath));
+        form.append("file", fs.createReadStream(filePath));
 
         const uploadResponse = await axios.post(upload_url, form, {
             headers: form.getHeaders()
@@ -705,7 +910,7 @@ export class CanvasClient {
 
     async getQuizSubmissions(courseId: number, quizId: number): Promise<any[]> {
         const response = await this.client.get(`courses/${courseId}/quizzes/${quizId}/submissions`, {
-            params: { include: ['user'], per_page: 100 }
+            params: { include: ["user"], per_page: 100 }
         });
         return response.data.quiz_submissions ?? [];
     }
@@ -715,7 +920,10 @@ export class CanvasClient {
         return { deleted: true };
     }
 
-    async checkQuizPending(courseId: number, quizId: number): Promise<{
+    async checkQuizPending(
+        courseId: number,
+        quizId: number
+    ): Promise<{
         quiz_id: number;
         total_students: number;
         submitted: number;
@@ -728,17 +936,15 @@ export class CanvasClient {
             })
         ]);
 
-        const realStudents = students.filter(u => u.name !== 'Estudiante de prueba' && u.sis_user_id !== null);
-        const submittedIds = new Set<number>(
-            (submissionsResp.data.quiz_submissions ?? []).map((s: any) => s.user_id)
-        );
+        const realStudents = students.filter((u) => u.name !== "Estudiante de prueba" && u.sis_user_id !== null);
+        const submittedIds = new Set<number>((submissionsResp.data.quiz_submissions ?? []).map((s: any) => s.user_id));
 
         const pending = realStudents
-            .filter(u => !submittedIds.has(u.id!))
-            .map(u => ({
+            .filter((u) => !submittedIds.has(u.id!))
+            .map((u) => ({
                 id: u.id!,
-                name: u.name ?? 'Desconocido',
-                email: u.login_id ?? ''
+                name: u.name ?? "Desconocido",
+                email: u.login_id ?? ""
             }));
 
         return {
@@ -750,22 +956,16 @@ export class CanvasClient {
     }
 
     async createQuiz(courseId: number, quiz: Partial<Quiz> & { title: string }): Promise<Quiz> {
-        const response = await this.client.post<Quiz>(
-            `courses/${courseId}/quizzes`,
-            {
-                quiz: quiz
-            }
-        );
+        const response = await this.client.post<Quiz>(`courses/${courseId}/quizzes`, {
+            quiz: quiz
+        });
         return response.data;
     }
 
     async updateQuiz(courseId: number, quizId: number, quiz: Partial<Quiz>): Promise<Quiz> {
-        const response = await this.client.put<Quiz>(
-            `courses/${courseId}/quizzes/${quizId}`,
-            {
-                quiz: quiz
-            }
-        );
+        const response = await this.client.put<Quiz>(`courses/${courseId}/quizzes/${quizId}`, {
+            quiz: quiz
+        });
         return response.data;
     }
 
@@ -806,7 +1006,10 @@ export class CanvasClient {
         return response.data;
     }
 
-    async updateFile(fileId: number, data: { name?: string; parent_folder_id?: number; locked?: boolean; hidden?: boolean }): Promise<FileAttachment> {
+    async updateFile(
+        fileId: number,
+        data: { name?: string; parent_folder_id?: number; locked?: boolean; hidden?: boolean }
+    ): Promise<FileAttachment> {
         const response = await this.client.put<FileAttachment>(`files/${fileId}`, data);
         return response.data;
     }
@@ -856,8 +1059,8 @@ export class CanvasClient {
 
     // --- Appointment Groups ---
 
-    async listAppointmentGroups(scope: 'all' | 'manageable' = 'all', include?: string[]): Promise<AppointmentGroup[]> {
-        return this.getAllPages<AppointmentGroup>('appointment_groups', {
+    async listAppointmentGroups(scope: "all" | "manageable" = "all", include?: string[]): Promise<AppointmentGroup[]> {
+        return this.getAllPages<AppointmentGroup>("appointment_groups", {
             scope,
             include
         });
@@ -871,7 +1074,7 @@ export class CanvasClient {
     }
 
     async createAppointmentGroup(data: Partial<AppointmentGroup>): Promise<AppointmentGroup> {
-        const response = await this.client.post<AppointmentGroup>('appointment_groups', {
+        const response = await this.client.post<AppointmentGroup>("appointment_groups", {
             appointment_group: data
         });
         return response.data;
@@ -900,7 +1103,7 @@ export class CanvasClient {
     }
 
     async getNextAppointment(): Promise<AppointmentGroup> {
-        const response = await this.client.get<AppointmentGroup>('appointment_groups/next_appointment');
+        const response = await this.client.get<AppointmentGroup>("appointment_groups/next_appointment");
         return response.data;
     }
 
@@ -910,24 +1113,30 @@ export class CanvasClient {
         return this.getAllPages<any>(`courses/${courseId}/group_categories`);
     }
 
-    async createGroupCategory(courseId: number, data: {
-        name: string;
-        self_signup?: string;
-        auto_leader?: string;
-        group_limit?: number;
-        create_group_count?: number;
-        split_group_count?: number;
-    }): Promise<any> {
+    async createGroupCategory(
+        courseId: number,
+        data: {
+            name: string;
+            self_signup?: string;
+            auto_leader?: string;
+            group_limit?: number;
+            create_group_count?: number;
+            split_group_count?: number;
+        }
+    ): Promise<any> {
         const response = await this.client.post(`courses/${courseId}/group_categories`, data);
         return response.data;
     }
 
-    async createGroup(groupCategoryId: number, data: {
-        name: string;
-        description?: string;
-        join_level?: string;
-        is_public?: boolean;
-    }): Promise<any> {
+    async createGroup(
+        groupCategoryId: number,
+        data: {
+            name: string;
+            description?: string;
+            join_level?: string;
+            is_public?: boolean;
+        }
+    ): Promise<any> {
         const response = await this.client.post(`group_categories/${groupCategoryId}/groups`, data);
         return response.data;
     }
@@ -937,7 +1146,9 @@ export class CanvasClient {
     }
 
     async assignUnassignedMembers(groupCategoryId: number, sync: boolean = false): Promise<any[]> {
-        const response = await this.client.post(`group_categories/${groupCategoryId}/assign_unassigned_members`, { sync });
+        const response = await this.client.post(`group_categories/${groupCategoryId}/assign_unassigned_members`, {
+            sync
+        });
         return response.data;
     }
 
@@ -948,57 +1159,57 @@ export class CanvasClient {
 
     // --- Course Management ---
 
-    async createCourse(accountId: number | string, data: {
-        name: string;
-        course_code?: string;
-        start_at?: string;
-        end_at?: string;
-        license?: string;
-        is_public?: boolean;
-        syllabus_body?: string;
-        grading_standard_id?: number;
-        locale?: string;
-        time_zone?: string;
-        default_view?: string;
-    }): Promise<Course> {
-        const response = await this.client.post<Course>(
-            `accounts/${accountId}/courses`,
-            { course: data }
-        );
+    async createCourse(
+        accountId: number | string,
+        data: {
+            name: string;
+            course_code?: string;
+            start_at?: string;
+            end_at?: string;
+            license?: string;
+            is_public?: boolean;
+            syllabus_body?: string;
+            grading_standard_id?: number;
+            locale?: string;
+            time_zone?: string;
+            default_view?: string;
+        }
+    ): Promise<Course> {
+        const response = await this.client.post<Course>(`accounts/${accountId}/courses`, { course: data });
         return response.data;
     }
 
-    async updateCourse(courseId: number, data: {
-        name?: string;
-        course_code?: string;
-        start_at?: string;
-        end_at?: string;
-        syllabus_body?: string;
-        license?: string;
-        is_public?: boolean;
-        locale?: string;
-        time_zone?: string;
-        default_view?: string;
-        grading_standard_id?: number;
-    }): Promise<Course> {
-        const response = await this.client.put<Course>(
-            `courses/${courseId}`,
-            { course: data }
-        );
+    async updateCourse(
+        courseId: number,
+        data: {
+            name?: string;
+            course_code?: string;
+            start_at?: string;
+            end_at?: string;
+            syllabus_body?: string;
+            license?: string;
+            is_public?: boolean;
+            locale?: string;
+            time_zone?: string;
+            default_view?: string;
+            grading_standard_id?: number;
+        }
+    ): Promise<Course> {
+        const response = await this.client.put<Course>(`courses/${courseId}`, { course: data });
         return response.data;
     }
 
     async getSyllabus(courseId: number): Promise<{ id: number; name: string; syllabus_body: string | null }> {
         const response = await this.client.get<{ id: number; name: string; syllabus_body: string | null }>(
             `courses/${courseId}`,
-            { params: { include: ['syllabus_body'] } }
+            { params: { include: ["syllabus_body"] } }
         );
         return response.data;
     }
 
     async healthCheck(): Promise<{ status: string; user: string; domain: string }> {
-        const response = await this.client.get<{ name: string }>('users/self/profile');
-        return { status: 'ok', user: response.data.name, domain: this.domain };
+        const response = await this.client.get<{ name: string }>("users/self/profile");
+        return { status: "ok", user: response.data.name, domain: this.domain };
     }
 
     // --- Assignment ---
@@ -1017,20 +1228,20 @@ export class CanvasClient {
 
     // --- Discussions ---
 
-    async createDiscussion(courseId: number, data: {
-        title: string;
-        message: string;
-        discussion_type?: 'side_comment' | 'threaded';
-        published?: boolean;
-        lock_at?: string;
-        pinned?: boolean;
-        allow_rating?: boolean;
-        require_initial_post?: boolean;
-    }): Promise<DiscussionTopic> {
-        const response = await this.client.post<DiscussionTopic>(
-            `courses/${courseId}/discussion_topics`,
-            data
-        );
+    async createDiscussion(
+        courseId: number,
+        data: {
+            title: string;
+            message: string;
+            discussion_type?: "side_comment" | "threaded";
+            published?: boolean;
+            lock_at?: string;
+            pinned?: boolean;
+            allow_rating?: boolean;
+            require_initial_post?: boolean;
+        }
+    ): Promise<DiscussionTopic> {
+        const response = await this.client.post<DiscussionTopic>(`courses/${courseId}/discussion_topics`, data);
         return response.data;
     }
 
@@ -1042,7 +1253,7 @@ export class CanvasClient {
     // --- Users & Enrollments ---
 
     async getProfile(): Promise<User> {
-        const response = await this.client.get<User>('users/self/profile');
+        const response = await this.client.get<User>("users/self/profile");
         return response.data;
     }
 
@@ -1062,31 +1273,31 @@ export class CanvasClient {
     async listCourseEnrollments(courseId: number, type?: string[]): Promise<Enrollment[]> {
         return this.getAllPages<Enrollment>(`courses/${courseId}/enrollments`, {
             type,
-            include: ['user'],
+            include: ["user"],
             per_page: 100
         });
     }
 
     async enrollUser(courseId: number, userId: number, enrollmentType: string, notify?: boolean): Promise<Enrollment> {
-        const response = await this.client.post<Enrollment>(
-            `courses/${courseId}/enrollments`,
-            {
-                enrollment: {
-                    user_id: userId,
-                    type: enrollmentType,
-                    enrollment_state: 'active',
-                    notify: notify ?? false
-                }
+        const response = await this.client.post<Enrollment>(`courses/${courseId}/enrollments`, {
+            enrollment: {
+                user_id: userId,
+                type: enrollmentType,
+                enrollment_state: "active",
+                notify: notify ?? false
             }
-        );
+        });
         return response.data;
     }
 
-    async removeEnrollment(courseId: number, enrollmentId: number, task: 'conclude' | 'delete' | 'deactivate' = 'conclude'): Promise<Enrollment> {
-        const response = await this.client.delete<Enrollment>(
-            `courses/${courseId}/enrollments/${enrollmentId}`,
-            { params: { task } }
-        );
+    async removeEnrollment(
+        courseId: number,
+        enrollmentId: number,
+        task: "conclude" | "delete" | "deactivate" = "conclude"
+    ): Promise<Enrollment> {
+        const response = await this.client.delete<Enrollment>(`courses/${courseId}/enrollments/${enrollmentId}`, {
+            params: { task }
+        });
         return response.data;
     }
 
@@ -1107,13 +1318,13 @@ export class CanvasClient {
         const { upload_url, upload_params } = preflightResponse.data;
 
         // Step 2: Upload file to storage
-        const fs = await import('node:fs');
-        const FormData = (await import('form-data')).default;
+        const fs = await import("node:fs");
+        const FormData = (await import("form-data")).default;
         const form = new FormData();
         Object.entries(upload_params).forEach(([key, value]) => {
             form.append(key, value);
         });
-        form.append('file', fs.createReadStream(filePath));
+        form.append("file", fs.createReadStream(filePath));
 
         const uploadResponse = await axios.post(upload_url, form, {
             headers: form.getHeaders(),
@@ -1123,7 +1334,7 @@ export class CanvasClient {
 
         // Step 3: Confirm upload and get file ID
         let fileId: number;
-        const location = uploadResponse.headers['location'] || uploadResponse.data?.location;
+        const location = uploadResponse.headers["location"] || uploadResponse.data?.location;
         if (location) {
             const confirmResponse = await this.client.get(location);
             fileId = confirmResponse.data.id;
@@ -1136,7 +1347,7 @@ export class CanvasClient {
             `courses/${courseId}/assignments/${assignmentId}/submissions`,
             {
                 submission: {
-                    submission_type: 'online_upload',
+                    submission_type: "online_upload",
                     file_ids: [fileId]
                 }
             }
@@ -1146,9 +1357,9 @@ export class CanvasClient {
 
     // --- Conversations ---
 
-    async listConversations(scope?: 'inbox' | 'unread' | 'archived' | 'sent', perPage = 50): Promise<Conversation[]> {
-        return this.getAllPages<Conversation>('conversations', {
-            scope: scope ?? 'inbox',
+    async listConversations(scope?: "inbox" | "unread" | "archived" | "sent", perPage = 50): Promise<Conversation[]> {
+        return this.getAllPages<Conversation>("conversations", {
+            scope: scope ?? "inbox",
             per_page: perPage
         });
     }
@@ -1159,7 +1370,7 @@ export class CanvasClient {
     }
 
     async getConversationUnreadCount(): Promise<{ unread_count: number }> {
-        const response = await this.client.get<{ unread_count: number }>('conversations/unread_count');
+        const response = await this.client.get<{ unread_count: number }>("conversations/unread_count");
         return response.data;
     }
 
@@ -1181,15 +1392,14 @@ export class CanvasClient {
         if (data.course_id) {
             payload.context_code = `course_${data.course_id}`;
         }
-        const response = await this.client.post<Conversation[]>('conversations', payload);
+        const response = await this.client.post<Conversation[]>("conversations", payload);
         return response.data;
     }
 
     async replyToConversation(conversationId: number, body: string): Promise<ConversationMessage> {
-        const response = await this.client.post<ConversationMessage>(
-            `conversations/${conversationId}/add_message`,
-            { body }
-        );
+        const response = await this.client.post<ConversationMessage>(`conversations/${conversationId}/add_message`, {
+            body
+        });
         return response.data;
     }
 
@@ -1211,15 +1421,18 @@ export class CanvasClient {
     }
 
     async searchCourseContent(courseId: number, query: string, contentTypes?: string[]): Promise<any[]> {
-        const types = contentTypes && contentTypes.length > 0 ? contentTypes : ['assignments', 'pages', 'discussion_topics', 'quizzes', 'files'];
+        const types =
+            contentTypes && contentTypes.length > 0
+                ? contentTypes
+                : ["assignments", "pages", "discussion_topics", "quizzes", "files"];
         const results: any[] = [];
         for (const type of types) {
             try {
                 const items = await this.getAllPages<any>(`courses/${courseId}/${type}`, { per_page: 50 });
                 const q = query.toLowerCase();
-                const matched = items.filter((i: any) =>
-                    (i.name || i.title || '').toLowerCase().includes(q)
-                ).map((i: any) => ({ ...i, _content_type: type }));
+                const matched = items
+                    .filter((i: any) => (i.name || i.title || "").toLowerCase().includes(q))
+                    .map((i: any) => ({ ...i, _content_type: type }));
                 results.push(...matched);
             } catch {
                 // skip types the user doesn't have access to
@@ -1231,20 +1444,25 @@ export class CanvasClient {
     // --- Peer Reviews ---
 
     async listPeerReviews(courseId: number, assignmentId: number): Promise<any[]> {
-        return this.getAllPages<any>(
-            `courses/${courseId}/assignments/${assignmentId}/peer_reviews`,
-            { include: ['submission_comments', 'user'], per_page: 100 }
-        );
+        return this.getAllPages<any>(`courses/${courseId}/assignments/${assignmentId}/peer_reviews`, {
+            include: ["submission_comments", "user"],
+            per_page: 100
+        });
     }
 
     async getSubmissionPeerReviews(courseId: number, assignmentId: number, submissionId: number): Promise<any[]> {
         return this.getAllPages<any>(
             `courses/${courseId}/assignments/${assignmentId}/submissions/${submissionId}/peer_reviews`,
-            { include: ['submission_comments', 'user'], per_page: 100 }
+            { include: ["submission_comments", "user"], per_page: 100 }
         );
     }
 
-    async createPeerReview(courseId: number, assignmentId: number, submissionId: number, revieweeId: number): Promise<any> {
+    async createPeerReview(
+        courseId: number,
+        assignmentId: number,
+        submissionId: number,
+        revieweeId: number
+    ): Promise<any> {
         const response = await this.client.post(
             `courses/${courseId}/assignments/${assignmentId}/submissions/${submissionId}/peer_reviews`,
             { user_id: revieweeId }
@@ -1252,7 +1470,12 @@ export class CanvasClient {
         return response.data;
     }
 
-    async deletePeerReview(courseId: number, assignmentId: number, submissionId: number, revieweeId: number): Promise<{ deleted: boolean }> {
+    async deletePeerReview(
+        courseId: number,
+        assignmentId: number,
+        submissionId: number,
+        revieweeId: number
+    ): Promise<{ deleted: boolean }> {
         await this.client.delete(
             `courses/${courseId}/assignments/${assignmentId}/submissions/${submissionId}/peer_reviews`,
             { params: { user_id: revieweeId } }
@@ -1262,26 +1485,33 @@ export class CanvasClient {
 
     // --- New Quizzes (LTI) ---
 
-    async createNewQuiz(courseId: number, data: {
-        title: string;
-        instructions?: string;
-        due_at?: string;
-        lock_at?: string;
-        unlock_at?: string;
-        points_possible?: number;
-        time_limit?: number;
-        allowed_attempts?: number;
-        shuffle_answers?: boolean;
-        shuffle_questions?: boolean;
-        one_question_at_a_time?: boolean;
-        cant_go_back?: boolean;
-        show_correct_answers?: boolean;
-    }): Promise<NewQuiz> {
+    async createNewQuiz(
+        courseId: number,
+        data: {
+            title: string;
+            instructions?: string;
+            due_at?: string;
+            lock_at?: string;
+            unlock_at?: string;
+            points_possible?: number;
+            time_limit?: number;
+            allowed_attempts?: number;
+            shuffle_answers?: boolean;
+            shuffle_questions?: boolean;
+            one_question_at_a_time?: boolean;
+            cant_go_back?: boolean;
+            show_correct_answers?: boolean;
+        }
+    ): Promise<NewQuiz> {
         const response = await this.quizClient.post<NewQuiz>(`courses/${courseId}/quizzes`, data);
         return response.data;
     }
 
-    async updateNewQuiz(courseId: number, quizId: string, data: Partial<Omit<NewQuiz, 'id' | 'course_id'>>): Promise<NewQuiz> {
+    async updateNewQuiz(
+        courseId: number,
+        quizId: string,
+        data: Partial<Omit<NewQuiz, "id" | "course_id">>
+    ): Promise<NewQuiz> {
         const response = await this.quizClient.patch<NewQuiz>(`courses/${courseId}/quizzes/${quizId}`, data);
         return response.data;
     }
@@ -1305,26 +1535,32 @@ export class CanvasClient {
         return response.data;
     }
 
-    async createNewQuizItem(courseId: number, quizId: string, data: {
-        position?: number;
-        points_possible?: number;
-        entry_type: string;
-        entry: {
-            title?: string;
-            item_body?: string;
-            interaction_type_slug?: string;
-            interaction_data?: Record<string, any>;
-            scoring_data?: Record<string, any>;
-        };
-    }): Promise<NewQuizItem> {
-        const response = await this.quizClient.post<NewQuizItem>(
-            `courses/${courseId}/quizzes/${quizId}/items`,
-            data
-        );
+    async createNewQuizItem(
+        courseId: number,
+        quizId: string,
+        data: {
+            position?: number;
+            points_possible?: number;
+            entry_type: string;
+            entry: {
+                title?: string;
+                item_body?: string;
+                interaction_type_slug?: string;
+                interaction_data?: Record<string, any>;
+                scoring_data?: Record<string, any>;
+            };
+        }
+    ): Promise<NewQuizItem> {
+        const response = await this.quizClient.post<NewQuizItem>(`courses/${courseId}/quizzes/${quizId}/items`, data);
         return response.data;
     }
 
-    async updateNewQuizItem(courseId: number, quizId: string, itemId: string, data: Partial<NewQuizItem>): Promise<NewQuizItem> {
+    async updateNewQuizItem(
+        courseId: number,
+        quizId: string,
+        itemId: string,
+        data: Partial<NewQuizItem>
+    ): Promise<NewQuizItem> {
         const response = await this.quizClient.patch<NewQuizItem>(
             `courses/${courseId}/quizzes/${quizId}/items/${itemId}`,
             data
@@ -1339,35 +1575,42 @@ export class CanvasClient {
 
     // --- Access Tokens ---
 
-    async listAccessTokens(userId: number | string = 'self'): Promise<AccessToken[]> {
+    async listAccessTokens(userId: number | string = "self"): Promise<AccessToken[]> {
         return this.getAllPages<AccessToken>(`users/${userId}/user_generated_tokens`, { per_page: 100 });
     }
 
-    async getAccessToken(userId: number | string = 'self', tokenId: number | string): Promise<AccessToken> {
+    async getAccessToken(userId: number | string = "self", tokenId: number | string): Promise<AccessToken> {
         const response = await this.client.get<AccessToken>(`users/${userId}/tokens/${tokenId}`);
         return response.data;
     }
 
-    async createAccessToken(userId: number | string = 'self', data: {
-        purpose: string;
-        expires_at?: string;
-        scopes?: string[];
-    }): Promise<AccessToken> {
+    async createAccessToken(
+        userId: number | string = "self",
+        data: {
+            purpose: string;
+            expires_at?: string;
+            scopes?: string[];
+        }
+    ): Promise<AccessToken> {
         const response = await this.client.post<AccessToken>(`users/${userId}/tokens`, { token: data });
         return response.data;
     }
 
-    async updateAccessToken(userId: number | string = 'self', tokenId: number | string, data: {
-        purpose?: string;
-        expires_at?: string | null;
-        scopes?: string[];
-        regenerate?: boolean;
-    }): Promise<AccessToken> {
+    async updateAccessToken(
+        userId: number | string = "self",
+        tokenId: number | string,
+        data: {
+            purpose?: string;
+            expires_at?: string | null;
+            scopes?: string[];
+            regenerate?: boolean;
+        }
+    ): Promise<AccessToken> {
         const response = await this.client.put<AccessToken>(`users/${userId}/tokens/${tokenId}`, { token: data });
         return response.data;
     }
 
-    async deleteAccessToken(userId: number | string = 'self', tokenId: number | string): Promise<{ deleted: boolean }> {
+    async deleteAccessToken(userId: number | string = "self", tokenId: number | string): Promise<{ deleted: boolean }> {
         await this.client.delete(`users/${userId}/tokens/${tokenId}`);
         return { deleted: true };
     }
@@ -1375,9 +1618,9 @@ export class CanvasClient {
     // Convenience wrapper around updateAccessToken({ regenerate: true }) that, when the
     // regenerated token is the one currently authenticating this client, also hot-swaps
     // and persists it so the MCP server keeps working without a manual reconfiguration.
-    async regenerateAccessToken(userId: number | string = 'self', tokenId: number | string): Promise<AccessToken> {
+    async regenerateAccessToken(userId: number | string = "self", tokenId: number | string): Promise<AccessToken> {
         const result = await this.updateAccessToken(userId, tokenId, { regenerate: true });
-        const isActiveToken = userId === 'self' && this.tokenMeta?.id === Number(tokenId);
+        const isActiveToken = userId === "self" && this.tokenMeta?.id === Number(tokenId);
         if (isActiveToken && result.token) {
             this.applyNewToken(result.token);
             this.onTokenRenewed?.(result.token);

@@ -65,10 +65,12 @@ export const studentTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                student_id: z.union([z.number(), z.string()])
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    student_id: z.union([z.number(), z.string()])
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const studentId = await resolveStudentId(client, courseId, input.student_id);
@@ -100,10 +102,12 @@ export const studentTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                student_id: z.union([z.number(), z.string()])
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    student_id: z.union([z.number(), z.string()])
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const studentId = await resolveStudentId(client, courseId, input.student_id);
@@ -149,10 +153,12 @@ export const studentTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                only_upcoming: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    only_upcoming: z.boolean().optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const assignments = await client.getAssignments(courseId);

@@ -59,7 +59,9 @@ function parseTextToolCalls(content: string): ParsedToolCall[] {
             if (parsed.name && parsed.arguments) {
                 results.push({ name: parsed.name, arguments: parsed.arguments });
             }
-        } catch { /* ignorar */ }
+        } catch {
+            /* ignorar */
+        }
     }
 
     if (results.length > 0) return results;
@@ -69,7 +71,9 @@ function parseTextToolCalls(content: string): ParsedToolCall[] {
     while ((match = jsonPattern.exec(content)) !== null) {
         try {
             results.push({ name: match[1], arguments: JSON.parse(match[2]) });
-        } catch { /* ignorar */ }
+        } catch {
+            /* ignorar */
+        }
     }
 
     return results;
@@ -97,13 +101,13 @@ const PROMPT_MODE_TOOLS = [
     "canvas_list_assignment_groups",
     "canvas_list_assignment_due_dates",
     "canvas_grade_multiple_submissions",
-    "canvas_get_submission_comments",
+    "canvas_get_submission_comments"
 ];
 
 function buildPromptSystemPrompt(tools: ToolDefinition[]): string {
     const selected = tools
-        .filter(t => PROMPT_MODE_TOOLS.includes(t.name))
-        .map(t => ({
+        .filter((t) => PROMPT_MODE_TOOLS.includes(t.name))
+        .map((t) => ({
             name: t.tool.name,
             description: t.tool.description,
             parameters: t.tool.inputSchema
@@ -141,10 +145,10 @@ export class AgentRunner {
     private ollamaTools: Tool[];
 
     constructor(client: CanvasClient, tools: ToolDefinition[], ollamaHost = "http://localhost:11434") {
-        this.client   = client;
-        this.tools    = tools;
-        this.ollama   = new Ollama({ host: ollamaHost });
-        this.ollamaTools = tools.map(t => ({
+        this.client = client;
+        this.tools = tools;
+        this.ollama = new Ollama({ host: ollamaHost });
+        this.ollamaTools = tools.map((t) => ({
             type: "function" as const,
             function: {
                 name: t.tool.name,
@@ -155,8 +159,8 @@ export class AgentRunner {
     }
 
     async run(userMessage: string, options: AgentRunOptions = {}): Promise<AgentResult> {
-        const modelRaw  = options.model      ?? "qwen2.5";
-        const modeArg   = options.mode       ?? "auto";
+        const modelRaw = options.model ?? "qwen2.5";
+        const modeArg = options.mode ?? "auto";
 
         // Resolver nombre del modelo (fallback a :latest)
         let model = modelRaw;
@@ -168,7 +172,9 @@ export class AgentRunner {
                 await this.ollama.show({ model: withLatest });
                 model = withLatest;
             } catch {
-                throw new Error(`Modelo '${modelRaw}' no encontrado en Ollama. Descárgalo con: ollama pull ${modelRaw}`);
+                throw new Error(
+                    `Modelo '${modelRaw}' no encontrado en Ollama. Descárgalo con: ollama pull ${modelRaw}`
+                );
             }
         }
 
@@ -180,14 +186,14 @@ export class AgentRunner {
             mode = modeArg;
         }
 
-        const defaultSystem = mode === "prompt"
-            ? buildPromptSystemPrompt(this.tools)
-            : NATIVE_SYSTEM;
+        const defaultSystem = mode === "prompt" ? buildPromptSystemPrompt(this.tools) : NATIVE_SYSTEM;
 
-        const messages: Message[] = [{
-            role: "system",
-            content: options.systemPrompt ?? defaultSystem
-        }];
+        const messages: Message[] = [
+            {
+                role: "system",
+                content: options.systemPrompt ?? defaultSystem
+            }
+        ];
         messages.push({ role: "user", content: userMessage });
 
         const toolsUsed: string[] = [];
@@ -207,7 +213,7 @@ export class AgentRunner {
             // Extraer tool calls
             let calls: ParsedToolCall[] = [];
             if (mode === "native" && assistantMessage.tool_calls?.length) {
-                calls = (assistantMessage.tool_calls as ToolCall[]).map(tc => ({
+                calls = (assistantMessage.tool_calls as ToolCall[]).map((tc) => ({
                     name: tc.function.name,
                     arguments: (tc.function.arguments ?? {}) as Record<string, unknown>
                 }));
@@ -217,15 +223,13 @@ export class AgentRunner {
 
             // Sin tool calls → respuesta final
             if (calls.length === 0) {
-                const answer = (assistantMessage.content ?? "")
-                    .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "")
-                    .trim();
+                const answer = (assistantMessage.content ?? "").replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "").trim();
                 return { answer, tools_used: toolsUsed, model, mode };
             }
 
             // Ejecutar cada herramienta
             for (const call of calls) {
-                const toolDef = this.tools.find(t => t.name === call.name);
+                const toolDef = this.tools.find((t) => t.name === call.name);
                 let resultText: string;
 
                 if (!toolDef) {
@@ -233,7 +237,7 @@ export class AgentRunner {
                 } else {
                     try {
                         const result = await toolDef.handler(this.client, call.arguments);
-                        const blocks = result?.content as Array<{ type: string; text?: string }> ?? [];
+                        const blocks = (result?.content as Array<{ type: string; text?: string }>) ?? [];
                         resultText = blocks
                             .filter((b: { type: string; text?: string }) => b.type === "text" && b.text)
                             .map((b: { type: string; text?: string }) => b.text!)
@@ -246,9 +250,10 @@ export class AgentRunner {
 
                 messages.push({
                     role: mode === "native" ? "tool" : "user",
-                    content: mode === "native"
-                        ? `[${call.name}]\n${resultText}`
-                        : `Resultado de ${call.name}:\n${resultText}`
+                    content:
+                        mode === "native"
+                            ? `[${call.name}]\n${resultText}`
+                            : `Resultado de ${call.name}:\n${resultText}`
                 });
             }
         }

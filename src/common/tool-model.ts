@@ -1,4 +1,11 @@
-import { Tool, Resource, Prompt, GetPromptResult, ReadResourceResult } from "@modelcontextprotocol/sdk/types.js";
+import {
+    Tool,
+    Resource,
+    ResourceTemplate,
+    Prompt,
+    GetPromptResult,
+    ReadResourceResult
+} from "@modelcontextprotocol/sdk/types.js";
 import { CanvasClient } from "../services/canvas-client.js";
 
 export interface ToolDefinition {
@@ -15,6 +22,7 @@ export interface ResourceHandler {
 // Simple export for the static list vs dynamic handler separation
 export interface ResourceManager {
     list: Resource[];
+    templates: ResourceTemplate[];
     read: (uri: URL, client: CanvasClient) => Promise<ReadResourceResult>;
 }
 

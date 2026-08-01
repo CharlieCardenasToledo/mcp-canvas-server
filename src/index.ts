@@ -1,72 +1,23 @@
 #!/usr/bin/env node
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-    CallToolRequestSchema,
-    ListToolsRequestSchema,
-    ListPromptsRequestSchema,
-    GetPromptRequestSchema,
-    ListResourcesRequestSchema,
-    ReadResourceRequestSchema,
-    Tool
-} from "@modelcontextprotocol/sdk/types.js";
-import * as dotenv from "dotenv";
-import { Command } from "commander";
-import inquirer from "inquirer";
 import chalk from "chalk";
-
-import { CanvasClient } from "./services/canvas-client.js";
+import { Command } from "commander";
+import * as dotenv from "dotenv";
+import inquirer from "inquirer";
 import { ConfigManager } from "./common/config-manager.js";
+import { getConfiguredTools } from "./common/tool-registry.js";
+import { startRestServer } from "./http-server.js";
+import { startMcpHttpServer } from "./mcp-http-server.js";
+import { createMcpServer } from "./server-factory.js";
+import { CanvasClient } from "./services/canvas-client.js";
+import { packageMetadata } from "./version.js";
 
-// Import Modular Components
-import { courseTools } from "./tools/course-tools.js";
-import { assignmentTools } from "./tools/assignment-tools.js";
-import { quizTools } from "./tools/quiz-tools.js";
-import { gradingTools } from "./tools/grading-tools.js";
-import { communicationTools } from "./tools/communication-tools.js";
-import { studentTools } from "./tools/student-tools.js";
-import { quizQuestionTools } from "./tools/quiz-question-tools.js";
-import { createTools } from "./tools/create-tools.js";
-import { moduleTools } from "./tools/module-tools.js";
-import { fileTools } from "./tools/file-tools.js";
-import { configTools } from "./tools/config-tools.js";
-import { rubricTools } from "./tools/rubric-tools.js";
-import { calendarTools } from "./tools/calendar-tools.js";
-import { groupTools } from "./tools/group-tools.js";
-import { enrollmentTools } from "./tools/enrollment-tools.js";
-import { conversationTools } from "./tools/conversation-tools.js";
-import { newQuizTools } from "./tools/new-quiz-tools.js";
-import { analyticsTools } from "./tools/analytics-tools.js";
-import { peerReviewTools } from "./tools/peer-review-tools.js";
-import { accessTokenTools } from "./tools/access-token-tools.js";
-import { canvasResources } from "./resources/canvas-resources.js";
-import { canvasPrompts } from "./prompts/canvas-prompts.js";
-import { ToolDefinition } from "./common/tool-model.js";
-import { startHttpServer } from "./http-server.js";
-
-// Load env vars if present
 dotenv.config();
 
 const configManager = new ConfigManager();
 const program = new Command();
 
-function uniqueTools(tools: ToolDefinition[]): ToolDefinition[] {
-    const seen = new Set<string>();
-    return tools.filter((tool) => {
-        if (seen.has(tool.name)) {
-            return false;
-        }
-        seen.add(tool.name);
-        return true;
-    });
-}
-
-program
-    .name("canvas-mcp")
-    .description("MCP Server for Canvas LMS (Refactored)")
-    .version("1.2.0");
-
-// --- CLI Commands ---
+program.name("canvas-mcp").description("Secure MCP server for Canvas LMS").version(packageMetadata.version);
 
 program
     .command("config")
@@ -94,11 +45,10 @@ program
         configManager.set("CANVAS_API_DOMAIN", answers.domain);
         configManager.set("CANVAS_API_TOKEN", answers.token);
 
-        console.log(chalk.green("\n✅ Configuration saved successfully!"));
+        console.log(chalk.green("\nConfiguration saved successfully."));
         console.log(chalk.gray(`Saved to: ${configManager.path}`));
     });
 
-// Helper to get authenticated client
 function getClient(): CanvasClient {
     const token = process.env.CANVAS_API_TOKEN || configManager.get("CANVAS_API_TOKEN");
     const domain = process.env.CANVAS_API_DOMAIN || configManager.get("CANVAS_API_DOMAIN");
@@ -108,8 +58,9 @@ function getClient(): CanvasClient {
         console.error(`Please run ${chalk.cyan("canvas-mcp config")} or set env vars.`);
         process.exit(1);
     }
+
     return new CanvasClient(token, domain, {
-        autoRenewToken: process.env.CANVAS_TOKEN_AUTO_RENEW !== "false",
+        autoRenewToken: process.env.CANVAS_TOKEN_AUTO_RENEW === "true",
         renewThresholdHours: process.env.CANVAS_TOKEN_RENEW_THRESHOLD_HOURS
             ? Number.parseFloat(process.env.CANVAS_TOKEN_RENEW_THRESHOLD_HOURS)
             : undefined,
@@ -120,138 +71,39 @@ function getClient(): CanvasClient {
     });
 }
 
-// NOTE: We could keep CLI commands for grading/auditing here calling the client directly,
-// but for the sake of the MCP Server refactor, we are focusing on the 'start' command.
-// I'll leave the 'start' command as the default.
-
 program
     .command("start", { isDefault: true })
-    .description("Start the MCP server (stdio mode)")
+    .description("Start the MCP server over stdio")
     .action(async () => {
-        const client = getClient();
-        const server = new Server(
-            {
-                name: "canvas-lms-server",
-                version: "1.2.0",
-            },
-            {
-                capabilities: {
-                    tools: {},
-                    prompts: {},
-                    resources: {},
-                },
-            }
-        );
-
-        // --- Aggregation ---
-        const allTools: ToolDefinition[] = uniqueTools([
-            ...courseTools,
-            ...assignmentTools,
-            ...quizTools,
-            ...gradingTools,
-            ...communicationTools,
-            ...studentTools,
-            ...quizQuestionTools,
-            ...createTools,
-            ...moduleTools,
-            ...fileTools,
-            ...configTools,
-            ...rubricTools,
-            ...calendarTools,
-            ...groupTools,
-            ...enrollmentTools,
-            ...conversationTools,
-            ...newQuizTools,
-            ...analyticsTools,
-            ...peerReviewTools,
-            ...accessTokenTools
-        ]);
-
-        // --- Tool Handlers ---
-        server.setRequestHandler(ListToolsRequestSchema, async () => {
-            return {
-                tools: allTools.map(t => t.tool)
-            };
-        });
-
-        server.setRequestHandler(CallToolRequestSchema, async (request) => {
-            const toolDef = allTools.find(t => t.name === request.params.name);
-            if (!toolDef) {
-                throw new Error(`Tool ${request.params.name} not found`);
-            }
-            try {
-                return await toolDef.handler(client, request.params.arguments);
-            } catch (error: any) {
-                return {
-                    content: [{ type: "text", text: `Error: ${error.message}` }],
-                    isError: true
-                };
-            }
-        });
-
-        // --- Resource Handlers ---
-        server.setRequestHandler(ListResourcesRequestSchema, async () => {
-            return {
-                resources: canvasResources.list
-            };
-        });
-
-        server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-            const uri = new URL(request.params.uri);
-            return await canvasResources.read(uri, client);
-        });
-
-        // --- Prompt Handlers ---
-        server.setRequestHandler(ListPromptsRequestSchema, async () => {
-            return {
-                prompts: canvasPrompts.map(p => p.prompt)
-            };
-        });
-
-        server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-            const promptDef = canvasPrompts.find(p => p.name === request.params.name);
-            if (!promptDef) {
-                throw new Error("Prompt not found");
-            }
-            return await promptDef.handler(request.params.arguments);
-        });
-
-        const transport = new StdioServerTransport();
-        await server.connect(transport);
+        const server = createMcpServer(getClient(), getConfiguredTools());
+        await server.connect(new StdioServerTransport());
         console.error("Canvas MCP Server running on stdio");
     });
 
 program
     .command("serve-http")
-    .description("Start HTTP API (Fastify) for GPT Builder Actions")
-    .option("--host <host>", "Host to bind", process.env.HTTP_HOST || "0.0.0.0")
-    .option("--port <port>", "Port to bind", process.env.PORT || process.env.HTTP_PORT || "3000")
+    .description("Start the MCP Streamable HTTP server")
+    .option("--host <host>", "Host to bind", process.env.MCP_HTTP_HOST || "127.0.0.1")
+    .option("--port <port>", "Port to bind", process.env.MCP_HTTP_PORT || "3000")
     .action(async (options: { host: string; port: string }) => {
-        const client = getClient();
-        const port = Number.parseInt(options.port, 10);
-        const allTools: ToolDefinition[] = uniqueTools([
-            ...courseTools,
-            ...assignmentTools,
-            ...quizTools,
-            ...gradingTools,
-            ...communicationTools,
-            ...studentTools,
-            ...quizQuestionTools,
-            ...createTools,
-            ...moduleTools,
-            ...fileTools,
-            ...configTools,
-            ...rubricTools,
-            ...calendarTools,
-            ...groupTools,
-            ...enrollmentTools,
-            ...conversationTools,
-            ...newQuizTools,
-            ...analyticsTools,
-            ...peerReviewTools,
-            ...accessTokenTools
-        ]);
-        await startHttpServer(client, options.host, port, allTools);
+        await startMcpHttpServer(getClient(), {
+            host: options.host,
+            port: Number.parseInt(options.port, 10),
+            tools: getConfiguredTools()
+        });
     });
 
-program.parse(process.argv);
+program
+    .command("serve-rest")
+    .description("Start the separate REST API for GPT Actions")
+    .option("--host <host>", "Host to bind", process.env.REST_HOST || "127.0.0.1")
+    .option("--port <port>", "Port to bind", process.env.REST_PORT || "3001")
+    .action(async (options: { host: string; port: string }) => {
+        await startRestServer(getClient(), options.host, Number.parseInt(options.port, 10), getConfiguredTools());
+    });
+
+program.parseAsync(process.argv).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : "Unexpected startup error";
+    console.error(chalk.red(message));
+    process.exitCode = 1;
+});

@@ -48,18 +48,20 @@ function sanitizeSchema(schema: Record<string, unknown>): Record<string, unknown
 
 function toolsToGemini(tools: ToolDefinition[]) {
     const seen = new Set<string>();
-    const unique = tools.filter(t => {
+    const unique = tools.filter((t) => {
         if (seen.has(t.tool.name)) return false;
         seen.add(t.tool.name);
         return true;
     });
-    return [{
-        functionDeclarations: unique.map(t => ({
-            name: t.tool.name,
-            description: (t.tool.description as string) ?? "",
-            parameters: sanitizeSchema(t.tool.inputSchema as Record<string, unknown>)
-        }))
-    }];
+    return [
+        {
+            functionDeclarations: unique.map((t) => ({
+                name: t.tool.name,
+                description: (t.tool.description as string) ?? "",
+                parameters: sanitizeSchema(t.tool.inputSchema as Record<string, unknown>)
+            }))
+        }
+    ];
 }
 
 export class GeminiRunner {
@@ -68,25 +70,23 @@ export class GeminiRunner {
     private client: CanvasClient;
 
     constructor(apiKey: string, client: CanvasClient, tools: ToolDefinition[]) {
-        this.ai     = new GoogleGenAI({ apiKey });
+        this.ai = new GoogleGenAI({ apiKey });
         this.client = client;
-        this.tools  = tools;
+        this.tools = tools;
     }
 
     async run(userMessage: string, options: GeminiRunOptions = {}): Promise<AgentResult> {
-        const model    = options.model ?? DEFAULT_MODEL;
+        const model = options.model ?? DEFAULT_MODEL;
         const geminiTools = toolsToGemini(this.tools);
-        const systemInstruction = options.systemPrompt ??
+        const systemInstruction =
+            options.systemPrompt ??
             "Eres un asistente educativo con acceso a Canvas LMS. " +
-            "Usa las herramientas disponibles para responder sobre cursos, tareas, estudiantes y calificaciones. " +
-            "Responde SIEMPRE en español. Sé conciso y claro.";
+                "Usa las herramientas disponibles para responder sobre cursos, tareas, estudiantes y calificaciones. " +
+                "Responde SIEMPRE en español. Sé conciso y claro.";
         const toolsUsed: string[] = [];
 
         // Historial de conversación en formato Gemini
-        const contents: any[] = [
-            { role: "user", parts: [{ text: userMessage }] }
-        ];
-
+        const contents: any[] = [{ role: "user", parts: [{ text: userMessage }] }];
 
         // Agentic loop (máx. 10 iteraciones)
         for (let i = 0; i < 10; i++) {
@@ -96,7 +96,7 @@ export class GeminiRunner {
                 config: {
                     tools: geminiTools,
                     systemInstruction,
-                    thinkingConfig: { thinkingBudget: 0 }  // deshabilitar thinking para evitar respuestas vacías
+                    thinkingConfig: { thinkingBudget: 0 } // deshabilitar thinking para evitar respuestas vacías
                 }
             });
 
@@ -110,11 +110,14 @@ export class GeminiRunner {
 
             // Separar texto y function calls
             const functionCalls = parts.filter((p: any) => p.functionCall);
-            const textParts     = parts.filter((p: any) => p.text);
+            const textParts = parts.filter((p: any) => p.text);
 
             // Sin function calls → respuesta final
             if (functionCalls.length === 0) {
-                const answer = textParts.map((p: any) => p.text).join("").trim();
+                const answer = textParts
+                    .map((p: any) => p.text)
+                    .join("")
+                    .trim();
                 return { answer, tools_used: toolsUsed, model, provider: "gemini" };
             }
 
@@ -122,7 +125,7 @@ export class GeminiRunner {
             const functionResponses: any[] = [];
             for (const part of functionCalls) {
                 const { name, args } = part.functionCall as { name: string; args: Record<string, unknown> };
-                const toolDef = this.tools.find(t => t.name === name);
+                const toolDef = this.tools.find((t) => t.name === name);
                 let resultText: string;
 
                 if (!toolDef) {
@@ -130,10 +133,10 @@ export class GeminiRunner {
                 } else {
                     try {
                         const result = await toolDef.handler(this.client, args ?? {});
-                        const blocks = result?.content as Array<{ type: string; text?: string }> ?? [];
+                        const blocks = (result?.content as Array<{ type: string; text?: string }>) ?? [];
                         resultText = blocks
-                            .filter(b => b.type === "text" && b.text)
-                            .map(b => b.text!)
+                            .filter((b) => b.type === "text" && b.text)
+                            .map((b) => b.text!)
                             .join("\n");
                         toolsUsed.push(name);
                     } catch (err: unknown) {

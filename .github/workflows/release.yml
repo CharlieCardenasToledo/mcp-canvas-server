@@ -1,0 +1,71 @@
+name: Release
+
+on:
+    push:
+        branches: [main]
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        outputs:
+            release_created: ${{ steps.release.outputs.release_created }}
+            tag_name: ${{ steps.release.outputs.tag_name }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Release Please
+              id: release
+              uses: googleapis/release-please-action@v4
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+
+    publish:
+        needs: release
+        if: needs.release.outputs.release_created == 'true'
+        runs-on: ubuntu-latest
+        environment: npm
+        permissions:
+            contents: read
+            id-token: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.release.outputs.tag_name }}
+
+            - name: Setup Node.js 24
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  registry-url: "https://registry.npmjs.org"
+                  cache: npm
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Quality gate
+              run: npm run check
+
+            - name: Validate release metadata
+              run: RELEASE_TAG=${{ needs.release.outputs.tag_name }} npm run release:check
+
+            - name: Package tarball smoke
+              run: npm run package:smoke
+
+            - name: Check whether the version already exists on npm
+              id: exists
+              run: |
+                  PACKAGE_NAME=$(jq -r .name package.json)
+                  PACKAGE_VERSION=$(jq -r .version package.json)
+                  if npm view "$PACKAGE_NAME@$PACKAGE_VERSION" --silent > /dev/null 2>&1; then
+                      echo "exists=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "exists=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Publish to npm (Trusted Publishing OIDC)
+              if: steps.exists.outputs.exists != 'true'
+              run: npm publish --access public --provenance

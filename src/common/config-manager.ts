@@ -1,4 +1,4 @@
-import Conf from 'conf';
+import Conf from "conf";
 
 interface AppConfig {
     CANVAS_API_TOKEN?: string;
@@ -10,8 +10,8 @@ export class ConfigManager {
 
     constructor() {
         this.conf = new Conf<AppConfig>({
-            projectName: 'canvas-mcp-server',
-            projectSuffix: ''
+            projectName: "canvas-mcp-server",
+            projectSuffix: ""
         });
     }
 
@@ -32,7 +32,7 @@ export class ConfigManager {
     }
 
     hasConfig(): boolean {
-        return this.conf.has('CANVAS_API_TOKEN') && this.conf.has('CANVAS_API_DOMAIN');
+        return this.conf.has("CANVAS_API_TOKEN") && this.conf.has("CANVAS_API_DOMAIN");
     }
 
     get path(): string {

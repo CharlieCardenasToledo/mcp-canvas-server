@@ -21,9 +21,11 @@ export const quizTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()])
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()])
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const quizzes = await client.getQuizzes(courseId);
@@ -50,10 +52,12 @@ export const quizTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const quiz = await client.getQuiz(courseId, input.quiz_id);
@@ -76,20 +80,26 @@ export const quizTools: ToolDefinition[] = [
                     },
                     quiz_id: { type: "number", description: "The quiz ID" },
                     due_at: { type: "string", description: "ISO-8601 due date. Use null to clear.", nullable: true },
-                    unlock_at: { type: "string", description: "ISO-8601 unlock date. Use null to clear.", nullable: true },
+                    unlock_at: {
+                        type: "string",
+                        description: "ISO-8601 unlock date. Use null to clear.",
+                        nullable: true
+                    },
                     lock_at: { type: "string", description: "ISO-8601 lock date. Use null to clear.", nullable: true }
                 },
                 required: ["course_id", "quiz_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number(),
-                due_at: z.string().nullable().optional(),
-                unlock_at: z.string().nullable().optional(),
-                lock_at: z.string().nullable().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number(),
+                    due_at: z.string().nullable().optional(),
+                    unlock_at: z.string().nullable().optional(),
+                    lock_at: z.string().nullable().optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const quiz = await client.updateQuiz(courseId, input.quiz_id, {
@@ -128,20 +138,22 @@ export const quizTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                title: z.string(),
-                description: z.string().optional(),
-                quiz_type: z.enum(["practice_quiz", "assignment", "graded_survey", "survey"]).optional(),
-                time_limit: z.number().optional(),
-                shuffle_answers: z.boolean().optional(),
-                published: z.boolean().optional(),
-                assignment_group_id: z.number().optional(),
-                allowed_attempts: z.number().optional(),
-                require_lockdown_browser: z.boolean().optional(),
-                show_correct_answers: z.boolean().optional(),
-                show_correct_answers_at: z.string().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    title: z.string(),
+                    description: z.string().optional(),
+                    quiz_type: z.enum(["practice_quiz", "assignment", "graded_survey", "survey"]).optional(),
+                    time_limit: z.number().optional(),
+                    shuffle_answers: z.boolean().optional(),
+                    published: z.boolean().optional(),
+                    assignment_group_id: z.number().optional(),
+                    allowed_attempts: z.number().optional(),
+                    require_lockdown_browser: z.boolean().optional(),
+                    show_correct_answers: z.boolean().optional(),
+                    show_correct_answers_at: z.string().optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const quizData = { ...input };
             delete (quizData as any).course_id;
@@ -157,17 +169,22 @@ export const quizTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" }
                 },
                 required: ["course_id", "quiz_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const questions = await client.listQuizQuestions(courseId, input.quiz_id);
             return { content: [{ type: "text", text: JSON.stringify(questions, null, 2) }] };
@@ -181,7 +198,10 @@ export const quizTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" },
                     question_id: { type: "number", description: "The question ID" }
                 },
@@ -189,11 +209,13 @@ export const quizTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number(),
-                question_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number(),
+                    question_id: z.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const question = await client.getQuizQuestion(courseId, input.quiz_id, input.question_id);
             return { content: [{ type: "text", text: JSON.stringify(question, null, 2) }] };
@@ -219,7 +241,10 @@ export const quizTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" },
                     question_name: { type: "string", description: "Short label for the question (e.g. 'Question 1')" },
                     question_type: {
@@ -240,14 +265,21 @@ export const quizTools: ToolDefinition[] = [
                         ],
                         description: "The type of question"
                     },
-                    question_text: { type: "string", description: "HTML or plain text of the question. For fill_in_multiple_blanks/multiple_dropdowns use [blank_id] placeholders." },
+                    question_text: {
+                        type: "string",
+                        description:
+                            "HTML or plain text of the question. For fill_in_multiple_blanks/multiple_dropdowns use [blank_id] placeholders."
+                    },
                     points_possible: { type: "number", description: "Points this question is worth" },
                     position: { type: "number", description: "Display order position within the quiz" },
                     quiz_group_id: { type: "number", description: "Assign to a quiz group/bank (optional)" },
                     correct_comments: { type: "string", description: "Feedback shown when answer is correct" },
                     incorrect_comments: { type: "string", description: "Feedback shown when answer is incorrect" },
                     neutral_comments: { type: "string", description: "Feedback always shown after answering" },
-                    text_after_answers: { type: "string", description: "Text displayed after the answers (used in missing word questions)" },
+                    text_after_answers: {
+                        type: "string",
+                        description: "Text displayed after the answers (used in missing word questions)"
+                    },
                     answers: {
                         type: "array",
                         description: "Answer objects. Fields used depend on question_type.",
@@ -255,19 +287,61 @@ export const quizTools: ToolDefinition[] = [
                             type: "object",
                             properties: {
                                 answer_text: { type: "string", description: "The answer text (most question types)" },
-                                answer_weight: { type: "number", description: "100 = correct, 0 = incorrect. For multiple_answers each correct option is 100." },
-                                answer_comments: { type: "string", description: "Per-answer feedback shown after selection" },
-                                blank_id: { type: "string", description: "For fill_in_multiple_blanks / multiple_dropdowns: which blank this answer belongs to" },
-                                answer_match_left: { type: "string", description: "For matching: left-side item (the prompt)" },
-                                answer_match_right: { type: "string", description: "For matching: right-side correct match" },
-                                matching_answer_incorrect_matches: { type: "string", description: "For matching: comma-separated distractor values for the right column" },
-                                numerical_answer_type: { type: "string", enum: ["exact_answer", "range_answer", "precision_answer"], description: "For numerical questions: accepted answer format" },
-                                exact: { type: "number", description: "For numerical exact_answer: the exact correct value" },
-                                margin: { type: "number", description: "For numerical exact_answer: allowed margin of error" },
-                                approximate: { type: "number", description: "For numerical precision_answer: the approximate value" },
-                                precision: { type: "number", description: "For numerical precision_answer: significant figures required" },
-                                start: { type: "number", description: "For numerical range_answer: start of accepted range" },
-                                end: { type: "number", description: "For numerical range_answer: end of accepted range" }
+                                answer_weight: {
+                                    type: "number",
+                                    description:
+                                        "100 = correct, 0 = incorrect. For multiple_answers each correct option is 100."
+                                },
+                                answer_comments: {
+                                    type: "string",
+                                    description: "Per-answer feedback shown after selection"
+                                },
+                                blank_id: {
+                                    type: "string",
+                                    description:
+                                        "For fill_in_multiple_blanks / multiple_dropdowns: which blank this answer belongs to"
+                                },
+                                answer_match_left: {
+                                    type: "string",
+                                    description: "For matching: left-side item (the prompt)"
+                                },
+                                answer_match_right: {
+                                    type: "string",
+                                    description: "For matching: right-side correct match"
+                                },
+                                matching_answer_incorrect_matches: {
+                                    type: "string",
+                                    description: "For matching: comma-separated distractor values for the right column"
+                                },
+                                numerical_answer_type: {
+                                    type: "string",
+                                    enum: ["exact_answer", "range_answer", "precision_answer"],
+                                    description: "For numerical questions: accepted answer format"
+                                },
+                                exact: {
+                                    type: "number",
+                                    description: "For numerical exact_answer: the exact correct value"
+                                },
+                                margin: {
+                                    type: "number",
+                                    description: "For numerical exact_answer: allowed margin of error"
+                                },
+                                approximate: {
+                                    type: "number",
+                                    description: "For numerical precision_answer: the approximate value"
+                                },
+                                precision: {
+                                    type: "number",
+                                    description: "For numerical precision_answer: significant figures required"
+                                },
+                                start: {
+                                    type: "number",
+                                    description: "For numerical range_answer: start of accepted range"
+                                },
+                                end: {
+                                    type: "number",
+                                    description: "For numerical range_answer: end of accepted range"
+                                }
                             }
                         }
                     }
@@ -292,26 +366,36 @@ export const quizTools: ToolDefinition[] = [
                 start: z.number().optional(),
                 end: z.number().optional()
             });
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number(),
-                question_name: z.string().optional(),
-                question_type: z.enum([
-                    "multiple_choice_question", "true_false_question", "short_answer_question",
-                    "fill_in_multiple_blanks_question", "multiple_answers_question", "multiple_dropdowns_question",
-                    "matching_question", "numerical_question", "calculated_question",
-                    "essay_question", "file_upload_question", "text_only_question"
-                ]),
-                question_text: z.string(),
-                points_possible: z.number(),
-                position: z.number().optional(),
-                quiz_group_id: z.number().optional(),
-                correct_comments: z.string().optional(),
-                incorrect_comments: z.string().optional(),
-                neutral_comments: z.string().optional(),
-                text_after_answers: z.string().optional(),
-                answers: z.array(answerSchema).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number(),
+                    question_name: z.string().optional(),
+                    question_type: z.enum([
+                        "multiple_choice_question",
+                        "true_false_question",
+                        "short_answer_question",
+                        "fill_in_multiple_blanks_question",
+                        "multiple_answers_question",
+                        "multiple_dropdowns_question",
+                        "matching_question",
+                        "numerical_question",
+                        "calculated_question",
+                        "essay_question",
+                        "file_upload_question",
+                        "text_only_question"
+                    ]),
+                    question_text: z.string(),
+                    points_possible: z.number(),
+                    position: z.number().optional(),
+                    quiz_group_id: z.number().optional(),
+                    correct_comments: z.string().optional(),
+                    incorrect_comments: z.string().optional(),
+                    neutral_comments: z.string().optional(),
+                    text_after_answers: z.string().optional(),
+                    answers: z.array(answerSchema).optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const { course_id: _, quiz_id: __, ...questionData } = input;
             const question = await client.createQuizQuestion(courseId, input.quiz_id, questionData);
@@ -322,21 +406,33 @@ export const quizTools: ToolDefinition[] = [
         name: "canvas_update_quiz_question",
         tool: {
             name: "canvas_update_quiz_question",
-            description: "Update an existing quiz question. Supports all 12 question types. Provide only the fields you want to change.",
+            description:
+                "Update an existing quiz question. Supports all 12 question types. Provide only the fields you want to change.",
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" },
                     question_id: { type: "number", description: "The question ID to update" },
                     question_name: { type: "string" },
                     question_type: {
                         type: "string",
                         enum: [
-                            "multiple_choice_question", "true_false_question", "short_answer_question",
-                            "fill_in_multiple_blanks_question", "multiple_answers_question", "multiple_dropdowns_question",
-                            "matching_question", "numerical_question", "calculated_question",
-                            "essay_question", "file_upload_question", "text_only_question"
+                            "multiple_choice_question",
+                            "true_false_question",
+                            "short_answer_question",
+                            "fill_in_multiple_blanks_question",
+                            "multiple_answers_question",
+                            "multiple_dropdowns_question",
+                            "matching_question",
+                            "numerical_question",
+                            "calculated_question",
+                            "essay_question",
+                            "file_upload_question",
+                            "text_only_question"
                         ]
                     },
                     question_text: { type: "string" },
@@ -349,7 +445,8 @@ export const quizTools: ToolDefinition[] = [
                     text_after_answers: { type: "string" },
                     answers: {
                         type: "array",
-                        description: "Full replacement of all answers. See canvas_create_quiz_question for field descriptions.",
+                        description:
+                            "Full replacement of all answers. See canvas_create_quiz_question for field descriptions.",
                         items: {
                             type: "object",
                             properties: {
@@ -360,7 +457,10 @@ export const quizTools: ToolDefinition[] = [
                                 answer_match_left: { type: "string" },
                                 answer_match_right: { type: "string" },
                                 matching_answer_incorrect_matches: { type: "string" },
-                                numerical_answer_type: { type: "string", enum: ["exact_answer", "range_answer", "precision_answer"] },
+                                numerical_answer_type: {
+                                    type: "string",
+                                    enum: ["exact_answer", "range_answer", "precision_answer"]
+                                },
                                 exact: { type: "number" },
                                 margin: { type: "number" },
                                 approximate: { type: "number" },
@@ -391,27 +491,39 @@ export const quizTools: ToolDefinition[] = [
                 start: z.number().optional(),
                 end: z.number().optional()
             });
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number(),
-                question_id: z.number(),
-                question_name: z.string().optional(),
-                question_type: z.enum([
-                    "multiple_choice_question", "true_false_question", "short_answer_question",
-                    "fill_in_multiple_blanks_question", "multiple_answers_question", "multiple_dropdowns_question",
-                    "matching_question", "numerical_question", "calculated_question",
-                    "essay_question", "file_upload_question", "text_only_question"
-                ]).optional(),
-                question_text: z.string().optional(),
-                points_possible: z.number().optional(),
-                position: z.number().optional(),
-                quiz_group_id: z.number().nullable().optional(),
-                correct_comments: z.string().optional(),
-                incorrect_comments: z.string().optional(),
-                neutral_comments: z.string().optional(),
-                text_after_answers: z.string().optional(),
-                answers: z.array(answerSchema).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number(),
+                    question_id: z.number(),
+                    question_name: z.string().optional(),
+                    question_type: z
+                        .enum([
+                            "multiple_choice_question",
+                            "true_false_question",
+                            "short_answer_question",
+                            "fill_in_multiple_blanks_question",
+                            "multiple_answers_question",
+                            "multiple_dropdowns_question",
+                            "matching_question",
+                            "numerical_question",
+                            "calculated_question",
+                            "essay_question",
+                            "file_upload_question",
+                            "text_only_question"
+                        ])
+                        .optional(),
+                    question_text: z.string().optional(),
+                    points_possible: z.number().optional(),
+                    position: z.number().optional(),
+                    quiz_group_id: z.number().nullable().optional(),
+                    correct_comments: z.string().optional(),
+                    incorrect_comments: z.string().optional(),
+                    neutral_comments: z.string().optional(),
+                    text_after_answers: z.string().optional(),
+                    answers: z.array(answerSchema).optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const { course_id: _, quiz_id: __, question_id, ...questionData } = input;
             const question = await client.updateQuizQuestion(courseId, input.quiz_id, question_id, questionData);
@@ -426,7 +538,10 @@ export const quizTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" },
                     question_id: { type: "number", description: "The question ID to delete" }
                 },
@@ -434,11 +549,13 @@ export const quizTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number(),
-                question_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number(),
+                    question_id: z.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.deleteQuizQuestion(courseId, input.quiz_id, input.question_id);
             return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -452,17 +569,22 @@ export const quizTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" }
                 },
                 required: ["course_id", "quiz_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const submissions = await client.getQuizSubmissions(courseId, input.quiz_id);
             return { content: [{ type: "text", text: JSON.stringify(submissions, null, 2) }] };
@@ -472,21 +594,27 @@ export const quizTools: ToolDefinition[] = [
         name: "canvas_check_quiz_pending",
         tool: {
             name: "canvas_check_quiz_pending",
-            description: "Check which enrolled students have NOT submitted a quiz. Returns a list of pending students with their name and email. Excludes test accounts.",
+            description:
+                "Check which enrolled students have NOT submitted a quiz. Returns a list of pending students with their name and email. Excludes test accounts.",
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID" }
                 },
                 required: ["course_id", "quiz_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.checkQuizPending(courseId, input.quiz_id);
             return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -500,17 +628,22 @@ export const quizTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { anyOf: [{ type: "number" }, { type: "string" }], description: "The ID or name of the course" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course"
+                    },
                     quiz_id: { type: "number", description: "The quiz ID to delete" }
                 },
                 required: ["course_id", "quiz_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.deleteQuiz(courseId, input.quiz_id);
             return { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] };
@@ -520,7 +653,8 @@ export const quizTools: ToolDefinition[] = [
         name: "canvas_update_quiz",
         tool: {
             name: "canvas_update_quiz",
-            description: "Update an existing quiz. Can change title, description, time limit, attempts, dates, shuffle, and publish state.",
+            description:
+                "Update an existing quiz. Can change title, description, time limit, attempts, dates, shuffle, and publish state.",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -529,38 +663,55 @@ export const quizTools: ToolDefinition[] = [
                     title: { type: "string" },
                     description: { type: "string" },
                     quiz_type: { type: "string", enum: ["practice_quiz", "assignment", "graded_survey", "survey"] },
-                    time_limit: { type: "number", description: "Time limit in minutes. Use null to remove limit.", nullable: true },
+                    time_limit: {
+                        type: "number",
+                        description: "Time limit in minutes. Use null to remove limit.",
+                        nullable: true
+                    },
                     shuffle_answers: { type: "boolean" },
-                    allowed_attempts: { type: "number", description: "Number of allowed attempts. Use -1 for unlimited." },
+                    allowed_attempts: {
+                        type: "number",
+                        description: "Number of allowed attempts. Use -1 for unlimited."
+                    },
                     due_at: { type: "string", description: "ISO-8601 due date. Use null to clear.", nullable: true },
-                    unlock_at: { type: "string", description: "ISO-8601 unlock date. Use null to clear.", nullable: true },
+                    unlock_at: {
+                        type: "string",
+                        description: "ISO-8601 unlock date. Use null to clear.",
+                        nullable: true
+                    },
                     lock_at: { type: "string", description: "ISO-8601 lock date. Use null to clear.", nullable: true },
                     published: { type: "boolean" },
                     require_lockdown_browser: { type: "boolean" },
                     show_correct_answers: { type: "boolean" },
-                    show_correct_answers_at: { type: "string", description: "ISO-8601 date to show correct answers", nullable: true }
+                    show_correct_answers_at: {
+                        type: "string",
+                        description: "ISO-8601 date to show correct answers",
+                        nullable: true
+                    }
                 },
                 required: ["course_id", "quiz_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.number(),
-                title: z.string().optional(),
-                description: z.string().optional(),
-                quiz_type: z.enum(["practice_quiz", "assignment", "graded_survey", "survey"]).optional(),
-                time_limit: z.number().nullable().optional(),
-                shuffle_answers: z.boolean().optional(),
-                allowed_attempts: z.number().optional(),
-                due_at: z.string().nullable().optional(),
-                unlock_at: z.string().nullable().optional(),
-                lock_at: z.string().nullable().optional(),
-                published: z.boolean().optional(),
-                require_lockdown_browser: z.boolean().optional(),
-                show_correct_answers: z.boolean().optional(),
-                show_correct_answers_at: z.string().nullable().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.number(),
+                    title: z.string().optional(),
+                    description: z.string().optional(),
+                    quiz_type: z.enum(["practice_quiz", "assignment", "graded_survey", "survey"]).optional(),
+                    time_limit: z.number().nullable().optional(),
+                    shuffle_answers: z.boolean().optional(),
+                    allowed_attempts: z.number().optional(),
+                    due_at: z.string().nullable().optional(),
+                    unlock_at: z.string().nullable().optional(),
+                    lock_at: z.string().nullable().optional(),
+                    published: z.boolean().optional(),
+                    require_lockdown_browser: z.boolean().optional(),
+                    show_correct_answers: z.boolean().optional(),
+                    show_correct_answers_at: z.string().nullable().optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const quizData = { ...input };
             delete (quizData as any).course_id;

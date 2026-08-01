@@ -15,18 +15,20 @@ export const communicationTools: ToolDefinition[] = [
                         type: "array",
                         items: { type: "number" },
                         description: "List of course IDs"
-                    },
+                    }
                 },
-                required: ["course_ids"],
-            },
+                required: ["course_ids"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_ids: z.array(z.number())
-            }).parse(args);
+            const input = z
+                .object({
+                    course_ids: z.array(z.number())
+                })
+                .parse(args);
             const announcements = await client.getAnnouncements(input.course_ids);
             return {
-                content: [{ type: "text", text: JSON.stringify(announcements, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(announcements, null, 2) }]
             };
         }
     },
@@ -38,16 +40,16 @@ export const communicationTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { type: "number", description: "The ID of the course" },
+                    course_id: { type: "number", description: "The ID of the course" }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.coerce.number() }).parse(args);
             const discussions = await client.getDiscussionTopics(input.course_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(discussions, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(discussions, null, 2) }]
             };
         }
     },
@@ -60,19 +62,21 @@ export const communicationTools: ToolDefinition[] = [
                 type: "object",
                 properties: {
                     course_id: { type: "number", description: "The ID of the course" },
-                    topic_id: { type: "number", description: "The ID of the discussion topic" },
+                    topic_id: { type: "number", description: "The ID of the discussion topic" }
                 },
-                required: ["course_id", "topic_id"],
-            },
+                required: ["course_id", "topic_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                topic_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    topic_id: z.coerce.number()
+                })
+                .parse(args);
             const entries = await client.getDiscussionEntries(input.course_id, input.topic_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(entries, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(entries, null, 2) }]
             };
         }
     },
@@ -86,20 +90,22 @@ export const communicationTools: ToolDefinition[] = [
                 properties: {
                     course_id: { type: "number", description: "The ID of the course" },
                     title: { type: "string", description: "The title of the announcement" },
-                    message: { type: "string", description: "The content/message of the announcement" },
+                    message: { type: "string", description: "The content/message of the announcement" }
                 },
-                required: ["course_id", "title", "message"],
-            },
+                required: ["course_id", "title", "message"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                title: z.string(),
-                message: z.string()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    title: z.string(),
+                    message: z.string()
+                })
+                .parse(args);
             const result = await client.postAnnouncement(input.course_id, input.title, input.message);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -114,24 +120,26 @@ export const communicationTools: ToolDefinition[] = [
                     course_id: { type: "number", description: "The ID of the course" },
                     topic_id: { type: "number", description: "The ID of the announcement (discussion topic)" },
                     title: { type: "string", description: "New title for the announcement (optional)" },
-                    message: { type: "string", description: "New HTML message body for the announcement (optional)" },
+                    message: { type: "string", description: "New HTML message body for the announcement (optional)" }
                 },
-                required: ["course_id", "topic_id"],
-            },
+                required: ["course_id", "topic_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                topic_id: z.coerce.number(),
-                title: z.string().optional(),
-                message: z.string().optional(),
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    topic_id: z.coerce.number(),
+                    title: z.string().optional(),
+                    message: z.string().optional()
+                })
+                .parse(args);
             const fields: { title?: string; message?: string } = {};
-            if (input.title)   fields.title   = input.title;
+            if (input.title) fields.title = input.title;
             if (input.message) fields.message = input.message;
             const result = await client.updateAnnouncement(input.course_id, input.topic_id, fields);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -156,24 +164,26 @@ export const communicationTools: ToolDefinition[] = [
                     require_initial_post: { type: "boolean", description: "Students must post before seeing replies" },
                     allow_rating: { type: "boolean", description: "Allow students to rate posts" }
                 },
-                required: ["course_id", "title", "message"],
-            },
+                required: ["course_id", "title", "message"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                title: z.string(),
-                message: z.string(),
-                discussion_type: z.enum(["side_comment", "threaded"]).optional(),
-                published: z.boolean().optional(),
-                pinned: z.boolean().optional(),
-                require_initial_post: z.boolean().optional(),
-                allow_rating: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    title: z.string(),
+                    message: z.string(),
+                    discussion_type: z.enum(["side_comment", "threaded"]).optional(),
+                    published: z.boolean().optional(),
+                    pinned: z.boolean().optional(),
+                    require_initial_post: z.boolean().optional(),
+                    allow_rating: z.boolean().optional()
+                })
+                .parse(args);
             const { course_id, ...data } = input;
             const result = await client.createDiscussion(course_id, data);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -188,17 +198,19 @@ export const communicationTools: ToolDefinition[] = [
                     course_id: { type: "number", description: "The ID of the course" },
                     topic_id: { type: "number", description: "The ID of the discussion topic to delete" }
                 },
-                required: ["course_id", "topic_id"],
-            },
+                required: ["course_id", "topic_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                topic_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    topic_id: z.coerce.number()
+                })
+                .parse(args);
             const result = await client.deleteDiscussion(input.course_id, input.topic_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -212,20 +224,22 @@ export const communicationTools: ToolDefinition[] = [
                 properties: {
                     course_id: { type: "number", description: "The ID of the course" },
                     topic_id: { type: "number", description: "The ID of the discussion topic" },
-                    message: { type: "string", description: "The reply message" },
+                    message: { type: "string", description: "The reply message" }
                 },
-                required: ["course_id", "topic_id", "message"],
-            },
+                required: ["course_id", "topic_id", "message"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                topic_id: z.coerce.number(),
-                message: z.string()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    topic_id: z.coerce.number(),
+                    message: z.string()
+                })
+                .parse(args);
             const result = await client.postDiscussionReply(input.course_id, input.topic_id, input.message);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     }

@@ -1,4 +1,3 @@
-
 import { ToolDefinition } from "../common/tool-model.js";
 import { CanvasClient } from "../services/canvas-client.js";
 import { resolveCourseId } from "../common/helpers.js";
@@ -21,20 +20,22 @@ export const createTools: ToolDefinition[] = [
                     body: { type: "string", description: "The HTML body of the page" },
                     published: { type: "boolean", description: "Whether the page updates are published" }
                 },
-                required: ["course_id", "title", "body"],
-            },
+                required: ["course_id", "title", "body"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                title: z.string(),
-                body: z.string(),
-                published: z.boolean().optional().default(false)
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    title: z.string(),
+                    body: z.string(),
+                    published: z.boolean().optional().default(false)
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const page = await client.createPage(courseId, input.title, input.body, input.published);
             return {
-                content: [{ type: "text", text: JSON.stringify(page, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(page, null, 2) }]
             };
         }
     },
@@ -55,17 +56,19 @@ export const createTools: ToolDefinition[] = [
                     body: { type: "string", description: "The new HTML body of the page" },
                     published: { type: "boolean", description: "Whether the page is published" }
                 },
-                required: ["course_id", "page_url_or_id"],
-            },
+                required: ["course_id", "page_url_or_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                page_url_or_id: z.union([z.string(), z.number()]),
-                title: z.string().optional(),
-                body: z.string().optional(),
-                published: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    page_url_or_id: z.union([z.string(), z.number()]),
+                    title: z.string().optional(),
+                    body: z.string().optional(),
+                    published: z.boolean().optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const page = await client.updatePage(courseId, input.page_url_or_id, {
                 title: input.title,
@@ -73,7 +76,7 @@ export const createTools: ToolDefinition[] = [
                 published: input.published
             });
             return {
-                content: [{ type: "text", text: JSON.stringify(page, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(page, null, 2) }]
             };
         }
     }

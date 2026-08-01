@@ -18,18 +18,20 @@ export const peerReviewTools: ToolDefinition[] = [
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" }
                 },
-                required: ["course_id", "assignment_id"],
-            },
+                required: ["course_id", "assignment_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.listPeerReviews(courseId, input.assignment_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -46,21 +48,26 @@ export const peerReviewTools: ToolDefinition[] = [
                         description: "The ID or name of the course"
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" },
-                    student_id: { type: "number", description: "The Canvas user ID of the student whose submission is being reviewed" }
+                    student_id: {
+                        type: "number",
+                        description: "The Canvas user ID of the student whose submission is being reviewed"
+                    }
                 },
-                required: ["course_id", "assignment_id", "student_id"],
-            },
+                required: ["course_id", "assignment_id", "student_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                student_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    student_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.getSubmissionPeerReviews(courseId, input.assignment_id, input.student_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -77,23 +84,33 @@ export const peerReviewTools: ToolDefinition[] = [
                         description: "The ID or name of the course"
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" },
-                    submission_student_id: { type: "number", description: "User ID of the student whose submission will be reviewed" },
+                    submission_student_id: {
+                        type: "number",
+                        description: "User ID of the student whose submission will be reviewed"
+                    },
                     reviewer_id: { type: "number", description: "User ID of the student who will perform the review" }
                 },
-                required: ["course_id", "assignment_id", "submission_student_id", "reviewer_id"],
-            },
+                required: ["course_id", "assignment_id", "submission_student_id", "reviewer_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                submission_student_id: z.coerce.number(),
-                reviewer_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    submission_student_id: z.coerce.number(),
+                    reviewer_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
-            const result = await client.createPeerReview(courseId, input.assignment_id, input.submission_student_id, input.reviewer_id);
+            const result = await client.createPeerReview(
+                courseId,
+                input.assignment_id,
+                input.submission_student_id,
+                input.reviewer_id
+            );
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -110,23 +127,33 @@ export const peerReviewTools: ToolDefinition[] = [
                         description: "The ID or name of the course"
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" },
-                    submission_student_id: { type: "number", description: "User ID of the student whose submission was being reviewed" },
+                    submission_student_id: {
+                        type: "number",
+                        description: "User ID of the student whose submission was being reviewed"
+                    },
                     reviewer_id: { type: "number", description: "User ID of the reviewer to remove" }
                 },
-                required: ["course_id", "assignment_id", "submission_student_id", "reviewer_id"],
-            },
+                required: ["course_id", "assignment_id", "submission_student_id", "reviewer_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                submission_student_id: z.coerce.number(),
-                reviewer_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    submission_student_id: z.coerce.number(),
+                    reviewer_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
-            const result = await client.deletePeerReview(courseId, input.assignment_id, input.submission_student_id, input.reviewer_id);
+            const result = await client.deletePeerReview(
+                courseId,
+                input.assignment_id,
+                input.submission_student_id,
+                input.reviewer_id
+            );
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     }

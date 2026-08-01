@@ -1,4 +1,3 @@
-import { GetPromptResult } from "@modelcontextprotocol/sdk/types.js";
 import { PromptDefinition } from "../common/tool-model.js";
 
 export const canvasPrompts: PromptDefinition[] = [

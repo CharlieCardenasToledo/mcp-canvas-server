@@ -27,19 +27,21 @@ export const configTools: ToolDefinition[] = [
         },
         handler: async (client: CanvasClient, args: any) => {
             const { domain, token } = args;
-            
+
             // Update the running client
             client.updateConfig(token, domain);
-            
+
             // Persist the changes
             configManager.set("CANVAS_API_DOMAIN", domain);
             configManager.set("CANVAS_API_TOKEN", token);
-            
+
             return {
-                content: [{ 
-                    type: "text", 
-                    text: `✅ Configuration updated and persisted successfully.\nDomain: ${domain}\nToken: updated (hidden)` 
-                }]
+                content: [
+                    {
+                        type: "text",
+                        text: `✅ Configuration updated and persisted successfully.\nDomain: ${domain}\nToken: updated (hidden)`
+                    }
+                ]
             };
         }
     }

@@ -29,22 +29,29 @@ export const gradingTools: ToolDefinition[] = [
                         }
                     }
                 },
-                required: ["course_id", "assignment_id", "student_id", "grade"],
-            },
+                required: ["course_id", "assignment_id", "student_id", "grade"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.coerce.number(),
-                assignment_id: z.coerce.number(),
-                student_id: z.coerce.number(),
-                grade: z.union([z.number(), z.string()]),
-                comment: z.string().optional(),
-                rubric_assessment: z.record(z.string(), z.object({
-                    rating_id: z.string().optional(),
-                    points: z.number(),
-                    comments: z.string().optional()
-                })).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.coerce.number(),
+                    assignment_id: z.coerce.number(),
+                    student_id: z.coerce.number(),
+                    grade: z.union([z.number(), z.string()]),
+                    comment: z.string().optional(),
+                    rubric_assessment: z
+                        .record(
+                            z.string(),
+                            z.object({
+                                rating_id: z.string().optional(),
+                                points: z.number(),
+                                comments: z.string().optional()
+                            })
+                        )
+                        .optional()
+                })
+                .parse(args);
 
             const result = await client.gradeSubmission(
                 input.course_id,
@@ -55,7 +62,7 @@ export const gradingTools: ToolDefinition[] = [
                 input.rubric_assessment
             );
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -63,7 +70,8 @@ export const gradingTools: ToolDefinition[] = [
         name: "canvas_grade_multiple_submissions",
         tool: {
             name: "canvas_grade_multiple_submissions",
-            description: "Grade multiple submissions at once, either by providing student_ids or filtering by status (e.g. unsubmitted)",
+            description:
+                "Grade multiple submissions at once, either by providing student_ids or filtering by status (e.g. unsubmitted)",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -92,25 +100,38 @@ export const gradingTools: ToolDefinition[] = [
                                 comments: { type: "string" }
                             }
                         }
+                    },
+                    dry_run: {
+                        type: "boolean",
+                        description:
+                            "Show the students that would be graded without applying. Defaults to true for safety."
                     }
                 },
                 required: ["course_id", "assignment_id", "grade"]
-            },
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.number(),
-                assignment_id: z.number(),
-                grade: z.union([z.number(), z.string()]),
-                comment: z.string().optional(),
-                student_ids: z.array(z.number()).optional(),
-                filter_status: z.enum(['unsubmitted', 'missing', 'late']).optional(),
-                rubric_assessment: z.record(z.string(), z.object({
-                    rating_id: z.string().optional(),
-                    points: z.number(),
-                    comments: z.string().optional()
-                })).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.number(),
+                    assignment_id: z.number(),
+                    grade: z.union([z.number(), z.string()]),
+                    comment: z.string().optional(),
+                    student_ids: z.array(z.number()).optional(),
+                    filter_status: z.enum(["unsubmitted", "missing", "late"]).optional(),
+                    rubric_assessment: z
+                        .record(
+                            z.string(),
+                            z.object({
+                                rating_id: z.string().optional(),
+                                points: z.number(),
+                                comments: z.string().optional()
+                            })
+                        )
+                        .optional(),
+                    dry_run: z.boolean().optional().default(true)
+                })
+                .parse(args);
 
             if (!input.student_ids && !input.filter_status) {
                 throw new Error("You must provide either student_ids or a filter_status (e.g. 'unsubmitted')");
@@ -128,38 +149,52 @@ export const gradingTools: ToolDefinition[] = [
                 const status = input.filter_status;
 
                 studentsToGrade = submissions
-                    .filter(s => {
-                        if (status === 'unsubmitted') return s.workflow_state === 'unsubmitted' || !s.submitted_at;
-                        if (status === 'missing') return s.missing;
-                        if (status === 'late') return s.late;
+                    .filter((s) => {
+                        if (status === "unsubmitted") return s.workflow_state === "unsubmitted" || !s.submitted_at;
+                        if (status === "missing") return s.missing;
+                        if (status === "late") return s.late;
                         return false;
                     })
-                    .map(s => s.user_id);
+                    .map((s) => s.user_id);
             }
 
             if (studentsToGrade.length === 0) {
                 return { content: [{ type: "text", text: "No students found matching the criteria." }] };
             }
 
+            if (input.dry_run !== false) {
+                return {
+                    content: [
+                        {
+                            type: "text",
+                            text: JSON.stringify(
+                                {
+                                    dry_run: true,
+                                    would_grade: studentsToGrade.length,
+                                    students: studentsToGrade,
+                                    grade: input.grade,
+                                    note: "Set dry_run: false to apply these grades."
+                                },
+                                null,
+                                2
+                            )
+                        }
+                    ]
+                };
+            }
+
             const results = [];
             for (const userId of studentsToGrade) {
                 try {
-                    await client.gradeSubmission(
-                        cid,
-                        aid,
-                        userId,
-                        input.grade,
-                        input.comment,
-                        input.rubric_assessment
-                    );
-                    results.push({ student_id: userId, status: 'graded', grade: input.grade });
+                    await client.gradeSubmission(cid, aid, userId, input.grade, input.comment, input.rubric_assessment);
+                    results.push({ student_id: userId, status: "graded", grade: input.grade });
                 } catch (err: any) {
-                    results.push({ student_id: userId, status: 'error', error: err.message });
+                    results.push({ student_id: userId, status: "error", error: err.message });
                 }
             }
 
             return {
-                content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(results, null, 2) }]
             };
         }
     },
@@ -171,17 +206,17 @@ export const gradingTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    course_id: { type: "number", description: "The ID of the course" },
+                    course_id: { type: "number", description: "The ID of the course" }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.coerce.number() }).parse(args);
             const cid = input.course_id;
             const assignments = await client.getAssignments(cid);
             const now = new Date();
-            const future = assignments.filter(a => a.due_at && new Date(a.due_at) > now);
+            const future = assignments.filter((a) => a.due_at && new Date(a.due_at) > now);
 
             if (future.length === 0) {
                 return { content: [{ type: "text", text: "No future assignments found." }] };
@@ -191,19 +226,19 @@ export const gradingTools: ToolDefinition[] = [
             for (const a of future) {
                 if (!a.id) continue;
                 const subs = await client.getSubmissions(cid, a.id);
-                const missing = subs.filter(s => s.workflow_state === 'unsubmitted' || !s.submitted_at);
+                const notSubmitted = subs.filter((s) => s.workflow_state === "unsubmitted" || !s.submitted_at);
 
-                if (missing.length > 0) {
+                if (notSubmitted.length > 0) {
                     report += `\nAssignment: ${a.name} (Due: ${a.due_at})\n`;
-                    report += `  ${missing.length} missing submissions:\n`;
-                    missing.forEach(m => {
+                    report += `  ${notSubmitted.length} students have not submitted yet (not counted as missing — due date is in the future):\n`;
+                    notSubmitted.forEach((m) => {
                         const name = (m as any).user?.name || `User ${m.user_id}`;
                         report += `    - ${name} (ID: ${m.user_id})\n`;
                     });
                 }
             }
             return {
-                content: [{ type: "text", text: report }],
+                content: [{ type: "text", text: report }]
             };
         }
     }

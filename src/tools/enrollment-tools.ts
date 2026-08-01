@@ -9,12 +9,12 @@ export const enrollmentTools: ToolDefinition[] = [
         tool: {
             name: "canvas_health_check",
             description: "Verify Canvas API connectivity and token validity",
-            inputSchema: { type: "object", properties: {} },
+            inputSchema: { type: "object", properties: {} }
         },
         handler: async (client: CanvasClient, _args: any) => {
             const result = await client.healthCheck();
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -23,12 +23,12 @@ export const enrollmentTools: ToolDefinition[] = [
         tool: {
             name: "canvas_get_profile",
             description: "Get the profile of the currently authenticated user",
-            inputSchema: { type: "object", properties: {} },
+            inputSchema: { type: "object", properties: {} }
         },
         handler: async (client: CanvasClient, _args: any) => {
             const result = await client.getProfile();
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -45,16 +45,18 @@ export const enrollmentTools: ToolDefinition[] = [
                         description: "Canvas user ID (number) or 'self' for current user"
                     }
                 },
-                required: ["user_id"],
-            },
+                required: ["user_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                user_id: z.union([z.coerce.number(), z.literal("self")])
-            }).parse(args);
+            const input = z
+                .object({
+                    user_id: z.union([z.coerce.number(), z.literal("self")])
+                })
+                .parse(args);
             const result = await client.getUser(input.user_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -79,18 +81,20 @@ export const enrollmentTools: ToolDefinition[] = [
                         description: "Filter by role: student, teacher, ta, observer, designer"
                     }
                 },
-                required: ["account_id", "search_term"],
-            },
+                required: ["account_id", "search_term"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                account_id: z.union([z.coerce.number(), z.string()]),
-                search_term: z.string().min(3),
-                enrollment_type: z.string().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    account_id: z.union([z.coerce.number(), z.string()]),
+                    search_term: z.string().min(3),
+                    enrollment_type: z.string().optional()
+                })
+                .parse(args);
             const result = await client.searchUsers(input.account_id, input.search_term, input.enrollment_type);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -109,21 +113,24 @@ export const enrollmentTools: ToolDefinition[] = [
                     type: {
                         type: "array",
                         items: { type: "string" },
-                        description: "Filter by enrollment type(s): StudentEnrollment, TeacherEnrollment, TaEnrollment, ObserverEnrollment, DesignerEnrollment"
+                        description:
+                            "Filter by enrollment type(s): StudentEnrollment, TeacherEnrollment, TaEnrollment, ObserverEnrollment, DesignerEnrollment"
                     }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                type: z.array(z.string()).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    type: z.array(z.string()).optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.listCourseEnrollments(courseId, input.type);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -142,7 +149,8 @@ export const enrollmentTools: ToolDefinition[] = [
                     user_id: { type: "number", description: "Canvas user ID to enroll" },
                     enrollment_type: {
                         type: "string",
-                        description: "Role: StudentEnrollment, TeacherEnrollment, TaEnrollment, ObserverEnrollment, DesignerEnrollment",
+                        description:
+                            "Role: StudentEnrollment, TeacherEnrollment, TaEnrollment, ObserverEnrollment, DesignerEnrollment",
                         default: "StudentEnrollment"
                     },
                     notify: {
@@ -150,20 +158,22 @@ export const enrollmentTools: ToolDefinition[] = [
                         description: "Send enrollment notification email to the user (default: false)"
                     }
                 },
-                required: ["course_id", "user_id", "enrollment_type"],
-            },
+                required: ["course_id", "user_id", "enrollment_type"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                user_id: z.coerce.number(),
-                enrollment_type: z.string(),
-                notify: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    user_id: z.coerce.number(),
+                    enrollment_type: z.string(),
+                    notify: z.boolean().optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.enrollUser(courseId, input.user_id, input.enrollment_type, input.notify);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -179,26 +189,32 @@ export const enrollmentTools: ToolDefinition[] = [
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
                     },
-                    enrollment_id: { type: "number", description: "The enrollment ID to remove (get it from canvas_list_course_enrollments)" },
+                    enrollment_id: {
+                        type: "number",
+                        description: "The enrollment ID to remove (get it from canvas_list_course_enrollments)"
+                    },
                     task: {
                         type: "string",
                         enum: ["conclude", "delete", "deactivate"],
-                        description: "Action: conclude (end gracefully), delete (remove permanently), deactivate (temporarily disable). Default: conclude"
+                        description:
+                            "Action: conclude (end gracefully), delete (remove permanently), deactivate (temporarily disable). Default: conclude"
                     }
                 },
-                required: ["course_id", "enrollment_id"],
-            },
+                required: ["course_id", "enrollment_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                enrollment_id: z.coerce.number(),
-                task: z.enum(["conclude", "delete", "deactivate"]).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    enrollment_id: z.coerce.number(),
+                    task: z.enum(["conclude", "delete", "deactivate"]).optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.removeEnrollment(courseId, input.enrollment_id, input.task ?? "conclude");
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     }

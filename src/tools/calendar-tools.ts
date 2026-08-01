@@ -11,19 +11,29 @@ export const calendarTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    scope: { type: "string", enum: ["all", "manageable"], description: "Scope of appointment groups to list" },
-                    include: { type: "array", items: { type: "string" }, description: "Additional associations to include" }
+                    scope: {
+                        type: "string",
+                        enum: ["all", "manageable"],
+                        description: "Scope of appointment groups to list"
+                    },
+                    include: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Additional associations to include"
+                    }
                 }
-            },
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                scope: z.enum(["all", "manageable"]).optional().default("all"),
-                include: z.array(z.string()).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    scope: z.enum(["all", "manageable"]).optional().default("all"),
+                    include: z.array(z.string()).optional()
+                })
+                .parse(args);
             const groups = await client.listAppointmentGroups(input.scope, input.include);
             return {
-                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }]
             };
         }
     },
@@ -36,19 +46,25 @@ export const calendarTools: ToolDefinition[] = [
                 type: "object",
                 properties: {
                     id: { type: "number", description: "The ID of the appointment group" },
-                    include: { type: "array", items: { type: "string" }, description: "Additional associations to include" }
+                    include: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Additional associations to include"
+                    }
                 },
-                required: ["id"],
-            },
+                required: ["id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                id: z.coerce.number(),
-                include: z.array(z.string()).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    id: z.coerce.number(),
+                    include: z.array(z.string()).optional()
+                })
+                .parse(args);
             const group = await client.getAppointmentGroup(input.id, input.include);
             return {
-                content: [{ type: "text", text: JSON.stringify(group, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(group, null, 2) }]
             };
         }
     },
@@ -60,7 +76,11 @@ export const calendarTools: ToolDefinition[] = [
             inputSchema: {
                 type: "object",
                 properties: {
-                    context_codes: { type: "array", items: { type: "string" }, description: "Array of context codes (e.g. course_123)" },
+                    context_codes: {
+                        type: "array",
+                        items: { type: "string" },
+                        description: "Array of context codes (e.g. course_123)"
+                    },
                     title: { type: "string", description: "Title of the appointment group" },
                     description: { type: "string", description: "Description of the appointment group" },
                     location_name: { type: "string", description: "Name of the location" },
@@ -82,26 +102,28 @@ export const calendarTools: ToolDefinition[] = [
                     },
                     participant_visibility: { type: "string", enum: ["private", "protected"] }
                 },
-                required: ["context_codes", "title"],
-            },
+                required: ["context_codes", "title"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                context_codes: z.array(z.string()),
-                title: z.string(),
-                description: z.string().optional(),
-                location_name: z.string().optional(),
-                location_address: z.string().optional(),
-                publish: z.boolean().optional(),
-                participants_per_appointment: z.number().optional(),
-                min_appointments_per_participant: z.number().optional(),
-                max_appointments_per_participant: z.number().optional(),
-                new_appointments: z.array(z.tuple([z.string(), z.string()])).optional(),
-                participant_visibility: z.enum(["private", "protected"]).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    context_codes: z.array(z.string()),
+                    title: z.string(),
+                    description: z.string().optional(),
+                    location_name: z.string().optional(),
+                    location_address: z.string().optional(),
+                    publish: z.boolean().optional(),
+                    participants_per_appointment: z.number().optional(),
+                    min_appointments_per_participant: z.number().optional(),
+                    max_appointments_per_participant: z.number().optional(),
+                    new_appointments: z.array(z.tuple([z.string(), z.string()])).optional(),
+                    participant_visibility: z.enum(["private", "protected"]).optional()
+                })
+                .parse(args);
             const group = await client.createAppointmentGroup(input);
             return {
-                content: [{ type: "text", text: JSON.stringify(group, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(group, null, 2) }]
             };
         }
     },
@@ -134,28 +156,30 @@ export const calendarTools: ToolDefinition[] = [
                     },
                     participant_visibility: { type: "string", enum: ["private", "protected"] }
                 },
-                required: ["id"],
-            },
+                required: ["id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                id: z.coerce.number(),
-                context_codes: z.array(z.string()).optional(),
-                title: z.string().optional(),
-                description: z.string().optional(),
-                location_name: z.string().optional(),
-                location_address: z.string().optional(),
-                publish: z.boolean().optional(),
-                participants_per_appointment: z.number().optional(),
-                min_appointments_per_participant: z.number().optional(),
-                max_appointments_per_participant: z.number().optional(),
-                new_appointments: z.array(z.tuple([z.string(), z.string()])).optional(),
-                participant_visibility: z.enum(["private", "protected"]).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    id: z.coerce.number(),
+                    context_codes: z.array(z.string()).optional(),
+                    title: z.string().optional(),
+                    description: z.string().optional(),
+                    location_name: z.string().optional(),
+                    location_address: z.string().optional(),
+                    publish: z.boolean().optional(),
+                    participants_per_appointment: z.number().optional(),
+                    min_appointments_per_participant: z.number().optional(),
+                    max_appointments_per_participant: z.number().optional(),
+                    new_appointments: z.array(z.tuple([z.string(), z.string()])).optional(),
+                    participant_visibility: z.enum(["private", "protected"]).optional()
+                })
+                .parse(args);
             const { id, ...data } = input;
             const group = await client.updateAppointmentGroup(id, data);
             return {
-                content: [{ type: "text", text: JSON.stringify(group, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(group, null, 2) }]
             };
         }
     },
@@ -170,17 +194,19 @@ export const calendarTools: ToolDefinition[] = [
                     id: { type: "number", description: "The ID of the appointment group" },
                     cancel_reason: { type: "string", description: "Reason for canceling the appointment group" }
                 },
-                required: ["id"],
-            },
+                required: ["id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                id: z.coerce.number(),
-                cancel_reason: z.string().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    id: z.coerce.number(),
+                    cancel_reason: z.string().optional()
+                })
+                .parse(args);
             const result = await client.deleteAppointmentGroup(input.id, input.cancel_reason);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -194,14 +220,14 @@ export const calendarTools: ToolDefinition[] = [
                 properties: {
                     id: { type: "number", description: "The ID of the appointment group" }
                 },
-                required: ["id"],
-            },
+                required: ["id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ id: z.coerce.number() }).parse(args);
             const users = await client.listAppointmentGroupUsers(input.id);
             return {
-                content: [{ type: "text", text: JSON.stringify(users, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(users, null, 2) }]
             };
         }
     },
@@ -215,14 +241,14 @@ export const calendarTools: ToolDefinition[] = [
                 properties: {
                     id: { type: "number", description: "The ID of the appointment group" }
                 },
-                required: ["id"],
-            },
+                required: ["id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ id: z.coerce.number() }).parse(args);
             const groups = await client.listAppointmentGroupGroups(input.id);
             return {
-                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }]
             };
         }
     },
@@ -231,12 +257,12 @@ export const calendarTools: ToolDefinition[] = [
         tool: {
             name: "canvas_get_next_appointment",
             description: "Get the next appointment group for the current user",
-            inputSchema: { type: "object", properties: {} },
+            inputSchema: { type: "object", properties: {} }
         },
         handler: async (client: CanvasClient) => {
             const group = await client.getNextAppointment();
             return {
-                content: [{ type: "text", text: JSON.stringify(group, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(group, null, 2) }]
             };
         }
     }

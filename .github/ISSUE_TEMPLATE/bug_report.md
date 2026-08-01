@@ -3,7 +3,7 @@ name: Bug report
 about: Report a broken tool, API error, or unexpected behavior
 title: "[BUG] "
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 **Tool name**
@@ -19,11 +19,13 @@ The prompt or tool call that caused the issue.
 What you expected to happen.
 
 **Error output**
+
 ```
 Paste the full error message here
 ```
 
 **Canvas environment**
+
 - Canvas version: Cloud / Self-Hosted
 - Institution type:
 - Tool version (`@charlie.act7/canvas-mcp-server`):

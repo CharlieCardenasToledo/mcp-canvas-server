@@ -16,16 +16,18 @@ export const conversationTools: ToolDefinition[] = [
                         enum: ["inbox", "unread", "archived", "sent"],
                         description: "Which mailbox to list (default: inbox)"
                     }
-                },
-            },
+                }
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                scope: z.enum(["inbox", "unread", "archived", "sent"]).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    scope: z.enum(["inbox", "unread", "archived", "sent"]).optional()
+                })
+                .parse(args);
             const result = await client.listConversations(input.scope);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -39,14 +41,14 @@ export const conversationTools: ToolDefinition[] = [
                 properties: {
                     conversation_id: { type: "number", description: "The ID of the conversation" }
                 },
-                required: ["conversation_id"],
-            },
+                required: ["conversation_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ conversation_id: z.coerce.number() }).parse(args);
             const result = await client.getConversation(input.conversation_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -55,12 +57,12 @@ export const conversationTools: ToolDefinition[] = [
         tool: {
             name: "canvas_get_conversation_unread_count",
             description: "Get the number of unread messages in the inbox",
-            inputSchema: { type: "object", properties: {} },
+            inputSchema: { type: "object", properties: {} }
         },
         handler: async (client: CanvasClient, _args: any) => {
             const result = await client.getConversationUnreadCount();
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -85,23 +87,26 @@ export const conversationTools: ToolDefinition[] = [
                     },
                     group_conversation: {
                         type: "boolean",
-                        description: "If true, all recipients share one thread. If false, each gets an individual message (default: false)"
+                        description:
+                            "If true, all recipients share one thread. If false, each gets an individual message (default: false)"
                     }
                 },
-                required: ["recipients", "subject", "body"],
-            },
+                required: ["recipients", "subject", "body"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                recipients: z.array(z.union([z.coerce.number(), z.string()])),
-                subject: z.string(),
-                body: z.string(),
-                course_id: z.coerce.number().optional(),
-                group_conversation: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    recipients: z.array(z.union([z.coerce.number(), z.string()])),
+                    subject: z.string(),
+                    body: z.string(),
+                    course_id: z.coerce.number().optional(),
+                    group_conversation: z.boolean().optional()
+                })
+                .parse(args);
             const result = await client.sendConversation(input);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -116,17 +121,19 @@ export const conversationTools: ToolDefinition[] = [
                     conversation_id: { type: "number", description: "The ID of the conversation to reply to" },
                     body: { type: "string", description: "The reply message text" }
                 },
-                required: ["conversation_id", "body"],
-            },
+                required: ["conversation_id", "body"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                conversation_id: z.coerce.number(),
-                body: z.string()
-            }).parse(args);
+            const input = z
+                .object({
+                    conversation_id: z.coerce.number(),
+                    body: z.string()
+                })
+                .parse(args);
             const result = await client.replyToConversation(input.conversation_id, input.body);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     }

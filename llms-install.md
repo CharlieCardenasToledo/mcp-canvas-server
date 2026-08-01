@@ -8,14 +8,15 @@ Comprehensive configuration instructions for connecting **Canvas LMS MCP Server*
 
 Every client configuration requires these core parameters:
 
-| Variable | Required | Description | Example |
-|---|---|---|---|
-| `CANVAS_API_TOKEN` | **Yes** | Your Canvas LMS personal access token. | `1234~abcXYZ...` |
-| `CANVAS_API_DOMAIN` | **Yes** | Domain of your Canvas instance (no `https://` prefix or trailing `/`). | `myschool.instructure.com` |
-| `CANVAS_TOKEN_AUTO_RENEW` | Optional | Auto-regenerate expiring token within threshold (`true`/`false`, default: `true`). | `true` |
-| `CANVAS_TOKEN_RENEW_THRESHOLD_HOURS` | Optional | Hours before token expiration to trigger auto-renewal (default: `24`). | `24` |
+| Variable                             | Required | Description                                                                        | Example                    |
+| ------------------------------------ | -------- | ---------------------------------------------------------------------------------- | -------------------------- |
+| `CANVAS_API_TOKEN`                   | **Yes**  | Your Canvas LMS personal access token.                                             | `1234~abcXYZ...`           |
+| `CANVAS_API_DOMAIN`                  | **Yes**  | Domain of your Canvas instance (no `https://` prefix or trailing `/`).             | `myschool.instructure.com` |
+| `CANVAS_TOKEN_AUTO_RENEW`            | Optional | Auto-regenerate expiring token within threshold (`true`/`false`, default: `true`). | `true`                     |
+| `CANVAS_TOKEN_RENEW_THRESHOLD_HOURS` | Optional | Hours before token expiration to trigger auto-renewal (default: `24`).             | `24`                       |
 
 ### How to Obtain Your Canvas Access Token
+
 1. Log in to your institution's **Canvas LMS** platform (e.g. `https://myschool.instructure.com`).
 2. Navigate to **Account** > **Settings** in the left sidebar.
 3. Scroll down to **Approved Integrations** and click **+ New Access Token**.
@@ -46,6 +47,7 @@ Every client configuration requires these core parameters:
 ### 1. Claude Code (CLI)
 
 #### Automatic CLI Command:
+
 ```bash
 claude mcp add canvas \
   --env CANVAS_API_TOKEN=YOUR_ACCESS_TOKEN_HERE \
@@ -54,19 +56,21 @@ claude mcp add canvas \
 ```
 
 #### Manual File Configuration (`~/.claude.json`):
+
 Add under `mcpServers`:
+
 ```json
 {
-  "mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      }
+    "mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -75,53 +79,58 @@ Add under `mcpServers`:
 ### 2. Claude Desktop (macOS & Windows)
 
 #### File Locations:
+
 - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 #### Configuration:
+
 ```json
 {
-  "mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      }
+    "mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            }
+        }
     }
-  }
 }
 ```
-*After saving, restart Claude Desktop. You will see 117 connected tools.*
+
+_After saving, restart Claude Desktop. You will see 117 connected tools._
 
 ---
 
 ### 3. Cursor Editor
 
 #### Option A: Settings UI
+
 1. Open **Cursor Settings** (⌘+`:` or Ctrl+`,`) > **Features** > **MCP**.
 2. Click **+ Add New MCP Server**.
 3. Name: `canvas`
 4. Type: `command` (stdio)
 5. Command: `npx -y @charlie.act7/canvas-mcp-server@latest`
 6. Environment Variables:
-   - `CANVAS_API_TOKEN`: `YOUR_ACCESS_TOKEN_HERE`
-   - `CANVAS_API_DOMAIN`: `myschool.instructure.com`
+    - `CANVAS_API_TOKEN`: `YOUR_ACCESS_TOKEN_HERE`
+    - `CANVAS_API_DOMAIN`: `myschool.instructure.com`
 
 #### Option B: Configuration File (`~/.cursor/mcp.json`):
+
 ```json
 {
-  "mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      }
+    "mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -130,22 +139,24 @@ Add under `mcpServers`:
 ### 4. Windsurf Editor (Codeium)
 
 #### File Location:
+
 - **Windows**: `%USERPROFILE%\.codeium\windsurf\mcp_config.json`
 - **macOS / Linux**: `~/.codeium/windsurf/mcp_config.json`
 
 #### Configuration:
+
 ```json
 {
-  "mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      }
+    "mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -154,28 +165,30 @@ Add under `mcpServers`:
 ### 5. Cline (VS Code Extension)
 
 #### Option A: Extension UI
+
 1. Click the **Cline** icon in the VS Code sidebar.
 2. Click the **MCP Servers** tab > **Configure MCP Servers**.
 3. Edit `cline_mcp_settings.json`.
 
 #### Option B: Settings File Path:
+
 - **Windows**: `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json`
 - **macOS**: `~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json`
 
 ```json
 {
-  "mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      },
-      "disabled": false,
-      "autoApprove": []
+    "mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            },
+            "disabled": false,
+            "autoApprove": []
+        }
     }
-  }
 }
 ```
 
@@ -184,21 +197,22 @@ Add under `mcpServers`:
 ### 6. Roo Code (VS Code Extension)
 
 #### File Path:
+
 - **Windows**: `%APPDATA%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\mcp.json`
 - **macOS**: `~/Library/Application Support/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp.json`
 
 ```json
 {
-  "mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      }
+    "mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -210,16 +224,16 @@ Add to workspace `.vscode/mcp.json` or User Settings (`settings.json`):
 
 ```json
 {
-  "github.copilot.mcpServers": {
-    "canvas": {
-      "command": "npx",
-      "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-      "env": {
-        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-        "CANVAS_API_DOMAIN": "myschool.instructure.com"
-      }
+    "github.copilot.mcpServers": {
+        "canvas": {
+            "command": "npx",
+            "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+            "env": {
+                "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                "CANVAS_API_DOMAIN": "myschool.instructure.com"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -233,21 +247,21 @@ Add to `experimental.modelContextProtocolServers`:
 
 ```json
 {
-  "experimental": {
-    "modelContextProtocolServers": [
-      {
-        "transport": {
-          "type": "stdio",
-          "command": "npx",
-          "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-          "env": {
-            "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-            "CANVAS_API_DOMAIN": "myschool.instructure.com"
-          }
-        }
-      }
-    ]
-  }
+    "experimental": {
+        "modelContextProtocolServers": [
+            {
+                "transport": {
+                    "type": "stdio",
+                    "command": "npx",
+                    "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+                    "env": {
+                        "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                        "CANVAS_API_DOMAIN": "myschool.instructure.com"
+                    }
+                }
+            }
+        ]
+    }
 }
 ```
 
@@ -259,18 +273,18 @@ File location: `~/.config/zed/settings.json` (macOS/Linux) or `%APPDATA%\Zed\set
 
 ```json
 {
-  "context_servers": {
-    "canvas": {
-      "command": {
-        "path": "npx",
-        "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
-        "env": {
-          "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
-          "CANVAS_API_DOMAIN": "myschool.instructure.com"
+    "context_servers": {
+        "canvas": {
+            "command": {
+                "path": "npx",
+                "args": ["-y", "@charlie.act7/canvas-mcp-server@latest"],
+                "env": {
+                    "CANVAS_API_TOKEN": "YOUR_ACCESS_TOKEN_HERE",
+                    "CANVAS_API_DOMAIN": "myschool.instructure.com"
+                }
+            }
         }
-      }
     }
-  }
 }
 ```
 
@@ -295,14 +309,14 @@ File location: `librechat.yaml`
 
 ```yaml
 mcpServers:
-  canvas:
-    command: "npx"
-    args:
-      - "-y"
-      - "@charlie.act7/canvas-mcp-server@latest"
-    env:
-      CANVAS_API_TOKEN: "YOUR_ACCESS_TOKEN_HERE"
-      CANVAS_API_DOMAIN: "myschool.instructure.com"
+    canvas:
+        command: "npx"
+        args:
+            - "-y"
+            - "@charlie.act7/canvas-mcp-server@latest"
+        env:
+            CANVAS_API_TOKEN: "YOUR_ACCESS_TOKEN_HERE"
+            CANVAS_API_DOMAIN: "myschool.instructure.com"
 ```
 
 ---
@@ -312,9 +326,9 @@ mcpServers:
 If you are creating an OpenAI Custom GPT Action:
 
 1. Launch the HTTP server mode:
-   ```bash
-   npx -y @charlie.act7/canvas-mcp-server serve-http --port 3000 --host 0.0.0.0
-   ```
+    ```bash
+    npx -y @charlie.act7/canvas-mcp-server serve-http --port 3000 --host 0.0.0.0
+    ```
 2. In your Custom GPT builder, go to **Actions** > **Import from URL**.
 3. Input your public server endpoint or local proxy OpenAPI schema:
    `http://localhost:3000/documentation/json`
@@ -355,15 +369,16 @@ Supports local models such as `llama3`, `qwen2.5`, and `mistral`.
 ## Verification & Diagnostics
 
 Once installed in your chosen AI client, ask:
-> *"List my active Canvas courses"*
+
+> _"List my active Canvas courses"_
 
 If properly configured, the assistant will call the `list_courses` tool and output your course roster.
 
 ### Common Troubleshooting Steps
 
-| Issue | Root Cause | Solution |
-|---|---|---|
-| **401 Unauthorized** | Invalid or expired token | Generate a new token in Canvas Account > Settings > Approved Integrations. |
-| **404 Not Found** | Incorrect domain format | Remove `https://` and trailing slashes from `CANVAS_API_DOMAIN` (use `myschool.instructure.com`). |
-| **No courses returned** | Roster permissions | Ensure your Canvas account is actively enrolled in at least one course as Teacher, Student, or Admin. |
-| **Token Expiry** | Auto-renewal active | Keep server running before token expires so auto-renewal can persist the new token. |
+| Issue                   | Root Cause               | Solution                                                                                              |
+| ----------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------- |
+| **401 Unauthorized**    | Invalid or expired token | Generate a new token in Canvas Account > Settings > Approved Integrations.                            |
+| **404 Not Found**       | Incorrect domain format  | Remove `https://` and trailing slashes from `CANVAS_API_DOMAIN` (use `myschool.instructure.com`).     |
+| **No courses returned** | Roster permissions       | Ensure your Canvas account is actively enrolled in at least one course as Teacher, Student, or Admin. |
+| **Token Expiry**        | Auto-renewal active      | Keep server running before token expires so auto-renewal can persist the new token.                   |

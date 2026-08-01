@@ -1,3 +1,17 @@
 node_modules
 dist
+.git
+.gitignore
 .env
+.env.local
+*.md
+ticec2026_latex
+paper_ticec2026.md
+ticec-track-cientifico-snapshot.md
+tests
+scripts
+.github
+Dockerfile
+docker-compose.yml
+README.es.md
+PLAN_MODERNIZACION_MCP.md

@@ -1,13 +1,21 @@
-import { ReadResourceResult, Resource } from "@modelcontextprotocol/sdk/types.js";
+import { ReadResourceResult, Resource, ResourceTemplate } from "@modelcontextprotocol/sdk/types.js";
 import { CanvasClient } from "../services/canvas-client.js";
-import { ResourceHandler, ResourceManager } from "../common/tool-model.js";
+import { ResourceManager } from "../common/tool-model.js";
 
-const resources: Resource[] = [
+const resources: Resource[] = [];
+
+const templates: ResourceTemplate[] = [
     {
-        uri: "canvas://courses/{course_id}/readme",
+        uriTemplate: "canvas://courses/{course_id}/readme",
         name: "Course Readme/Summary",
         mimeType: "text/markdown",
         description: "A summary of the course structure"
+    },
+    {
+        uriTemplate: "canvas://courses/{course_id}/pages/{page_id}",
+        name: "Canvas course page",
+        mimeType: "text/html",
+        description: "The HTML body of a Canvas course page"
     }
 ];
 
@@ -17,7 +25,7 @@ async function readResource(uri: URL, client: CanvasClient): Promise<ReadResourc
         throw new Error("Invalid protocol");
     }
 
-    const pathParts = uri.pathname.split("/").filter(Boolean);
+    const pathParts = [uri.hostname, ...uri.pathname.split("/").filter(Boolean)];
     // Expected patterns:
     // courses/{id}/pages/{page_id}
     // courses/{id}/files/{file_id}
@@ -27,7 +35,10 @@ async function readResource(uri: URL, client: CanvasClient): Promise<ReadResourc
         throw new Error("Unknown resource type");
     }
 
-    const courseId = parseInt(pathParts[1]);
+    const courseId = Number.parseInt(pathParts[1], 10);
+    if (!Number.isSafeInteger(courseId) || courseId <= 0) {
+        throw new Error("Invalid Canvas course ID");
+    }
     const subResource = pathParts[2];
 
     if (subResource === "readme") {
@@ -35,23 +46,30 @@ async function readResource(uri: URL, client: CanvasClient): Promise<ReadResourc
         const assignments = await client.getAssignments(courseId);
         const summary = `# Course ${courseId} Summary\n\n## Modules\n${modules.map((m: any) => `- ${m.name} (${m.items_count} items)`).join("\n")}\n\n## Assignments\n${assignments.map((a: any) => `- ${a.name} (Due: ${a.due_at})`).join("\n")}`;
         return {
-            contents: [{
-                uri: uri.toString(),
-                mimeType: "text/markdown",
-                text: summary
-            }]
+            contents: [
+                {
+                    uri: uri.toString(),
+                    mimeType: "text/markdown",
+                    text: summary
+                }
+            ]
         };
     }
 
     if (subResource === "pages") {
         const pageId = pathParts[3];
+        if (!pageId) {
+            throw new Error("Missing Canvas page ID");
+        }
         const page = await client.getPage(courseId, pageId);
         return {
-            contents: [{
-                uri: uri.toString(),
-                mimeType: "text/html",
-                text: page.body || ""
-            }]
+            contents: [
+                {
+                    uri: uri.toString(),
+                    mimeType: "text/html",
+                    text: page.body || ""
+                }
+            ]
         };
     }
 
@@ -64,5 +82,6 @@ async function readResource(uri: URL, client: CanvasClient): Promise<ReadResourc
 
 export const canvasResources: ResourceManager = {
     list: resources,
+    templates,
     read: readResource
 };

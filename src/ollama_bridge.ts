@@ -26,21 +26,27 @@ import { GeminiRunner } from "./services/gemini-runner.js";
 // ---------------------------------------------------------------------------
 
 const DEFAULT_MODEL = "qwen2.5";
-const DEFAULT_HOST  = "http://localhost:11434";
+const DEFAULT_HOST = "http://localhost:11434";
 
-function parseArgs(): { model: string; host: string; mode: "auto" | "native" | "prompt"; provider: "ollama" | "gemini"; geminiKey: string } {
+function parseArgs(): {
+    model: string;
+    host: string;
+    mode: "auto" | "native" | "prompt";
+    provider: "ollama" | "gemini";
+    geminiKey: string;
+} {
     const args = process.argv.slice(2);
-    let model     = DEFAULT_MODEL;
-    let host      = DEFAULT_HOST;
+    let model = DEFAULT_MODEL;
+    let host = DEFAULT_HOST;
     let mode: "auto" | "native" | "prompt" = "auto";
     let provider: "ollama" | "gemini" = "ollama";
     let geminiKey = process.env.GEMINI_API_KEY ?? "";
 
     for (let i = 0; i < args.length; i++) {
-        if (args[i] === "--model"      && args[i + 1]) model     = args[++i];
-        if (args[i] === "--host"       && args[i + 1]) host      = args[++i];
+        if (args[i] === "--model" && args[i + 1]) model = args[++i];
+        if (args[i] === "--host" && args[i + 1]) host = args[++i];
         if (args[i] === "--gemini-key" && args[i + 1]) geminiKey = args[++i];
-        if (args[i] === "--provider"   && args[i + 1]) {
+        if (args[i] === "--provider" && args[i + 1]) {
             const p = args[++i];
             if (p === "gemini" || p === "ollama") provider = p;
         }
@@ -105,12 +111,12 @@ function buildPromptModeSystemPrompt(tools: McpTool[]): string {
         "canvas_list_discussions",
         "canvas_audit_course",
         "canvas_list_assignment_groups",
-        "canvas_list_assignment_due_dates",
+        "canvas_list_assignment_due_dates"
     ];
 
-    const selected = tools.filter(t => RELEVANT.includes(t.name));
+    const selected = tools.filter((t) => RELEVANT.includes(t.name));
 
-    const toolDefs = selected.map(t => ({
+    const toolDefs = selected.map((t) => ({
         name: t.name,
         description: t.description,
         parameters: t.inputSchema
@@ -145,7 +151,9 @@ function parsePromptModeResponse(content: string): ParsedToolCall[] {
             if (parsed.name && parsed.arguments) {
                 results.push({ name: parsed.name, arguments: parsed.arguments });
             }
-        } catch { /* JSON malformado */ }
+        } catch {
+            /* JSON malformado */
+        }
     }
 
     if (results.length > 0) return results;
@@ -155,7 +163,9 @@ function parsePromptModeResponse(content: string): ParsedToolCall[] {
     while ((match = jsonPattern.exec(content)) !== null) {
         try {
             results.push({ name: match[1], arguments: JSON.parse(match[2]) });
-        } catch { /* ignorar */ }
+        } catch {
+            /* ignorar */
+        }
     }
 
     return results;
@@ -165,11 +175,7 @@ function parsePromptModeResponse(content: string): ParsedToolCall[] {
 // Detectar si el modelo soporta tools nativo
 // ---------------------------------------------------------------------------
 
-async function detectMode(
-    ollama: Ollama,
-    model: string,
-    sampleTools: Tool[]
-): Promise<"native" | "prompt"> {
+async function detectMode(ollama: Ollama, model: string, sampleTools: Tool[]): Promise<"native" | "prompt"> {
     try {
         await ollama.chat({
             model,
@@ -189,18 +195,15 @@ async function detectMode(
 // Ejecutar una tool call via MCP
 // ---------------------------------------------------------------------------
 
-async function executeTool(
-    mcpClient: Client,
-    toolCall: ParsedToolCall
-): Promise<string> {
+async function executeTool(mcpClient: Client, toolCall: ParsedToolCall): Promise<string> {
     const result = await mcpClient.callTool({
         name: toolCall.name,
         arguments: toolCall.arguments
     });
     const content = result.content as Array<{ type: string; text?: string }>;
     return content
-        .filter(b => b.type === "text" && b.text)
-        .map(b => b.text!)
+        .filter((b) => b.type === "text" && b.text)
+        .map((b) => b.text!)
         .join("\n");
 }
 
@@ -211,18 +214,15 @@ async function executeTool(
 async function main() {
     const { model, host, mode: modeArg, provider, geminiKey } = parseArgs();
 
-    const __dirname  = path.dirname(fileURLToPath(import.meta.url));
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const serverEntry = path.resolve(__dirname, "../dist/index.js");
 
     const configManager = new ConfigManager();
-    const token  = process.env.CANVAS_API_TOKEN  || configManager.get("CANVAS_API_TOKEN");
+    const token = process.env.CANVAS_API_TOKEN || configManager.get("CANVAS_API_TOKEN");
     const domain = process.env.CANVAS_API_DOMAIN || configManager.get("CANVAS_API_DOMAIN");
 
     if (!token || !domain) {
-        console.error(
-            "Error: Falta CANVAS_API_TOKEN o CANVAS_API_DOMAIN.\n" +
-            "Ejecuta: npm run start -- config"
-        );
+        console.error("Error: Falta CANVAS_API_TOKEN o CANVAS_API_DOMAIN.\n" + "Ejecuta: npm run start -- config");
         process.exit(1);
     }
 
@@ -244,14 +244,16 @@ async function main() {
     // --- Rama Gemini ---
     if (provider === "gemini") {
         if (!geminiKey) {
-            console.error("Error: se necesita una API key de Gemini.\nUsa --gemini-key TU_KEY o define GEMINI_API_KEY.");
+            console.error(
+                "Error: se necesita una API key de Gemini.\nUsa --gemini-key TU_KEY o define GEMINI_API_KEY."
+            );
             await mcpClient.close();
             process.exit(1);
         }
 
         // Importar las herramientas MCP como ToolDefinition para GeminiRunner
         // Las reconstruimos desde mcpTools + handlers directos via MCP client
-        const toolDefs = (mcpTools as McpTool[]).map(t => ({
+        const toolDefs = (mcpTools as McpTool[]).map((t) => ({
             name: t.name,
             tool: { name: t.name, description: t.description ?? "", inputSchema: t.inputSchema },
             handler: async (_client: any, args: any) => {
@@ -269,7 +271,11 @@ async function main() {
         const rl = readline.createInterface({ input, output });
         while (true) {
             let userInput: string;
-            try { userInput = await rl.question("Tú: "); } catch { break; }
+            try {
+                userInput = await rl.question("Tú: ");
+            } catch {
+                break;
+            }
             if (!userInput.trim()) continue;
             if (userInput.trim().toLowerCase() === "salir") break;
 
@@ -324,11 +330,12 @@ async function main() {
     console.log('Escribe tu pregunta (o "salir" para terminar)\n');
 
     // 5. Construir historial inicial según modo
-    const systemContent = mode === "prompt"
-        ? buildPromptModeSystemPrompt(mcpTools as McpTool[])
-        : "Eres un asistente educativo con acceso a Canvas LMS. " +
-          "Usa las herramientas disponibles para consultar cursos, tareas, estudiantes y calificaciones. " +
-          "Responde SIEMPRE en español. Sé conciso y presenta los datos de forma clara.";
+    const systemContent =
+        mode === "prompt"
+            ? buildPromptModeSystemPrompt(mcpTools as McpTool[])
+            : "Eres un asistente educativo con acceso a Canvas LMS. " +
+              "Usa las herramientas disponibles para consultar cursos, tareas, estudiantes y calificaciones. " +
+              "Responde SIEMPRE en español. Sé conciso y presenta los datos de forma clara.";
 
     const messages: Message[] = [{ role: "system", content: systemContent }];
 
@@ -339,7 +346,9 @@ async function main() {
         let userInput: string;
         try {
             userInput = await rl.question("Tú: ");
-        } catch { break; }
+        } catch {
+            break;
+        }
 
         if (!userInput.trim()) continue;
         if (userInput.trim().toLowerCase() === "salir") break;
@@ -363,7 +372,7 @@ async function main() {
 
             if (mode === "native") {
                 if (assistantMessage.tool_calls?.length) {
-                    toolCalls = (assistantMessage.tool_calls as ToolCall[]).map(tc => ({
+                    toolCalls = (assistantMessage.tool_calls as ToolCall[]).map((tc) => ({
                         name: tc.function.name,
                         arguments: (tc.function.arguments ?? {}) as Record<string, unknown>
                     }));
@@ -390,9 +399,7 @@ async function main() {
                     process.stdout.write("✓\n");
                     messages.push({
                         role: mode === "native" ? "tool" : "user",
-                        content: mode === "native"
-                            ? `[${tc.name}]\n${result}`
-                            : `Resultado de ${tc.name}:\n${result}`
+                        content: mode === "native" ? `[${tc.name}]\n${result}` : `Resultado de ${tc.name}:\n${result}`
                     });
                 } catch (err: unknown) {
                     const msg = err instanceof Error ? err.message : String(err);
@@ -411,7 +418,7 @@ async function main() {
     await mcpClient.close();
 }
 
-main().catch(err => {
+main().catch((err) => {
     console.error("Error fatal:", err);
     process.exit(1);
 });

@@ -12,7 +12,7 @@ export interface Module {
     id: number;
     name: string;
     position?: number;
-    workflow_state?: 'active' | 'deleted';
+    workflow_state?: "active" | "deleted";
     items_count?: number;
     items_url?: string;
     items?: ModuleItem[] | null;
@@ -23,7 +23,7 @@ export interface ModuleItem {
     id: number;
     module_id?: number;
     title: string;
-    type: 'File' | 'Page' | 'Discussion' | 'Assignment' | 'Quiz' | 'SubHeader' | 'ExternalUrl' | 'ExternalTool';
+    type: "File" | "Page" | "Discussion" | "Assignment" | "Quiz" | "SubHeader" | "ExternalUrl" | "ExternalTool";
     html_url?: string;
 }
 
@@ -133,7 +133,7 @@ export interface Submission {
     grade?: string | null;
     score?: number | null;
     submitted_at?: string | null;
-    workflow_state: 'submitted' | 'unsubmitted' | 'graded' | 'pending_review';
+    workflow_state: "submitted" | "unsubmitted" | "graded" | "pending_review";
     late?: boolean;
     missing?: boolean;
     excused?: boolean;
@@ -186,7 +186,6 @@ export interface Enrollment {
     };
 }
 
-
 export interface ApiResponse<T> {
     success: boolean;
     data?: T;
@@ -232,7 +231,7 @@ export interface DiscussionTopic {
     message: string;
     html_url: string;
     posted_at: string;
-    discussion_type: 'side_comment' | 'threaded';
+    discussion_type: "side_comment" | "threaded";
     lock_at?: string;
     locked: boolean;
     pinned: boolean;
@@ -271,7 +270,7 @@ export interface QuizQuestionAnswer {
     answer_match_right?: string;
     matching_answer_incorrect_matches?: string;
     // Numerical
-    numerical_answer_type?: 'exact_answer' | 'range_answer' | 'precision_answer';
+    numerical_answer_type?: "exact_answer" | "range_answer" | "precision_answer";
     exact?: number;
     margin?: number;
     approximate?: number;
@@ -353,7 +352,7 @@ export interface ConversationMessage {
 export interface Conversation {
     id: number;
     subject: string;
-    workflow_state: 'read' | 'unread' | 'archived';
+    workflow_state: "read" | "unread" | "archived";
     last_message: string;
     last_message_at: string;
     message_count: number;
@@ -406,7 +405,7 @@ export interface AppointmentGroup {
     location_address?: string;
     context_codes?: string[];
     sub_context_codes?: string[];
-    workflow_state?: 'active' | 'deleted';
+    workflow_state?: "active" | "deleted";
     require_interaction?: boolean;
     participants_per_appointment?: number;
     min_appointments_per_participant?: number;
@@ -417,15 +416,15 @@ export interface AppointmentGroup {
     html_url?: string;
     created_at?: string;
     updated_at?: string;
-    participant_visibility?: 'private' | 'protected';
-    participant_type?: 'User' | 'Group';
+    participant_visibility?: "private" | "protected";
+    participant_type?: "User" | "Group";
 }
 
 export interface AccessToken {
     id: number;
     created_at: string;
     expires_at: string | null;
-    workflow_state: 'active' | 'pending' | 'disabled' | 'deleted';
+    workflow_state: "active" | "pending" | "disabled" | "deleted";
     remember_access?: boolean;
     scopes?: string[];
     real_user_id?: number | null;

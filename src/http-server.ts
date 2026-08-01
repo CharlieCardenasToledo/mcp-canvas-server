@@ -2,18 +2,32 @@ import Fastify, { FastifyError } from "fastify";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import * as fs from "node:fs/promises";
-import * as path from "node:path";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { CanvasClient } from "./services/canvas-client.js";
 import { AgentRunner, AgentMode } from "./services/agent-runner.js";
 import { GeminiRunner } from "./services/gemini-runner.js";
 import type { ToolDefinition } from "./common/tool-model.js";
 import type { QuizQuestionAnswer } from "./common/types.js";
 
+function isLoopbackHost(host: string): boolean {
+    const normalized = host
+        .trim()
+        .toLowerCase()
+        .replace(/^\[|\]$/g, "");
+    return normalized === "localhost" || normalized === "::1" || normalized.startsWith("127.");
+}
+
+function secureTokenEqual(actual: string, expected: string): boolean {
+    const actualHash = createHash("sha256").update(actual).digest();
+    const expectedHash = createHash("sha256").update(expected).digest();
+    return timingSafeEqual(actualHash, expectedHash);
+}
+
 function buildOpenApiSpec(): any {
     return {
         openapi: "3.1.0",
         info: {
-            title: "Canvas MCP HTTP API",
+            title: "Canvas REST API",
             version: "1.0.0",
             description: "HTTP facade for Canvas operations, suitable for GPT Builder Actions."
         },
@@ -366,7 +380,11 @@ function buildOpenApiSpec(): any {
                                     type: "object",
                                     properties: {
                                         question_name: { type: "string", description: "Question name/title" },
-                                        question_type: { type: "string", description: "e.g. multiple_choice_question, true_false_question, essay_question" },
+                                        question_type: {
+                                            type: "string",
+                                            description:
+                                                "e.g. multiple_choice_question, true_false_question, essay_question"
+                                        },
                                         question_text: { type: "string", description: "Question text (HTML)" },
                                         points_possible: { type: "number", description: "Point value" },
                                         quiz_group_id: { type: "integer", description: "Optional quiz group ID" },
@@ -518,7 +536,10 @@ function buildOpenApiSpec(): any {
                                         name: { type: "string", description: "Group name" },
                                         pick_count: { type: "integer", description: "Number of questions to pick" },
                                         question_points: { type: "number", description: "Points per question" },
-                                        assessment_question_bank_id: { type: "integer", description: "Question bank to link" }
+                                        assessment_question_bank_id: {
+                                            type: "integer",
+                                            description: "Question bank to link"
+                                        }
                                     },
                                     required: ["name", "pick_count", "question_points"]
                                 }
@@ -571,7 +592,7 @@ function buildOpenApiSpec(): any {
                                         },
                                         dry_run: {
                                             type: "boolean",
-                                            default: false
+                                            default: true
                                         }
                                     },
                                     required: ["query_terms", "due_at"]
@@ -590,8 +611,29 @@ function buildOpenApiSpec(): any {
     };
 }
 
-export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", port = 3000, tools: ToolDefinition[] = []): Promise<void> {
+export async function startRestServer(
+    client: CanvasClient,
+    host = "127.0.0.1",
+    port = 3001,
+    tools: ToolDefinition[] = []
+): Promise<void> {
     const app = Fastify({ logger: true });
+    const authToken = process.env.REST_AUTH_TOKEN;
+    if (!isLoopbackHost(host) && !authToken) {
+        throw new Error("REST_AUTH_TOKEN is required when the REST API binds to a non-loopback host.");
+    }
+
+    app.addHook("onRequest", async (request, reply) => {
+        const isPublic =
+            ["/health", "/privacy", "/openapi.json"].includes(request.url) || request.url.startsWith("/docs");
+        if (isPublic || !authToken) return;
+        const authorization = request.headers.authorization;
+        const supplied = authorization?.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+        if (!supplied || !secureTokenEqual(supplied, authToken)) {
+            reply.header("www-authenticate", "Bearer");
+            return reply.code(401).send({ error: "Unauthorized" });
+        }
+    });
 
     await app.register(swagger, {
         openapi: buildOpenApiSpec()
@@ -608,7 +650,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
 
     app.get("/health", async () => ({ ok: true }));
     app.get("/privacy", async () => ({
-        service: "Canvas MCP HTTP API",
+        service: "Canvas REST API",
         effective_date: "2026-02-12",
         summary: [
             "This service processes Canvas API data strictly to fulfill user requests.",
@@ -696,14 +738,11 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         return client.getQuizzes(courseId);
     });
 
-    app.get<{ Params: { courseId: string; quizId: string } }>(
-        "/courses/:courseId/quizzes/:quizId",
-        async (request) => {
-            const courseId = Number.parseInt(request.params.courseId, 10);
-            const quizId = Number.parseInt(request.params.quizId, 10);
-            return client.getQuiz(courseId, quizId);
-        }
-    );
+    app.get<{ Params: { courseId: string; quizId: string } }>("/courses/:courseId/quizzes/:quizId", async (request) => {
+        const courseId = Number.parseInt(request.params.courseId, 10);
+        const quizId = Number.parseInt(request.params.quizId, 10);
+        return client.getQuiz(courseId, quizId);
+    });
 
     app.patch<{
         Params: { courseId: string; quizId: string };
@@ -747,7 +786,8 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             answers?: QuizQuestionAnswer[];
         };
     }>("/courses/:courseId/quizzes/:quizId/questions", async (request, reply) => {
-        const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } = request.body || {};
+        const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } =
+            request.body || {};
         if (!question_name || !question_type || !question_text || points_possible === undefined) {
             return reply.code(400).send({
                 error: "question_name, question_type, question_text and points_possible are required."
@@ -780,7 +820,8 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         const courseId = Number.parseInt(request.params.courseId, 10);
         const quizId = Number.parseInt(request.params.quizId, 10);
         const questionId = Number.parseInt(request.params.questionId, 10);
-        const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } = request.body || {};
+        const { question_name, question_type, question_text, points_possible, quiz_group_id, answers } =
+            request.body || {};
         const data: any = {};
         if (question_name !== undefined) data.question_name = question_name;
         if (question_type !== undefined) data.question_type = question_type;
@@ -833,7 +874,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         const courseId = Number.parseInt(request.params.courseId, 10);
         const terms = (request.body.query_terms || []).map((t) => t.toLowerCase().trim()).filter(Boolean);
         const dueAt = request.body.due_at;
-        const dryRun = request.body.dry_run === true;
+        const dryRun = request.body.dry_run !== false;
         const rawLimit = request.body.limit ?? 20;
         const limit = Math.min(Math.max(rawLimit, 1), 100);
 
@@ -897,16 +938,10 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
 
     // --- POST /chat ---
 
-    const ollamaRunner = new AgentRunner(
-        client,
-        tools,
-        process.env.OLLAMA_HOST ?? "http://localhost:11434"
-    );
+    const ollamaRunner = new AgentRunner(client, tools, process.env.OLLAMA_HOST ?? "http://localhost:11434");
 
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? "";
-    const geminiRunner = GEMINI_API_KEY
-        ? new GeminiRunner(GEMINI_API_KEY, client, tools)
-        : null;
+    const geminiRunner = GEMINI_API_KEY ? new GeminiRunner(GEMINI_API_KEY, client, tools) : null;
 
     app.post<{
         Body: {
@@ -924,17 +959,19 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         }
 
         if (tools.length === 0) {
-            return reply.code(503).send({ error: "El servidor no tiene herramientas cargadas. Inicia con 'serve-http'." });
+            return reply
+                .code(503)
+                .send({ error: "El servidor no tiene herramientas cargadas. Inicia con 'serve-rest'." });
         }
 
         if (provider === "gemini") {
             const apiKey = gemini_key || GEMINI_API_KEY;
             if (!apiKey) {
-                return reply.code(400).send({ error: "Se necesita gemini_key en el body o GEMINI_API_KEY en el entorno." });
+                return reply
+                    .code(400)
+                    .send({ error: "Se necesita gemini_key en el body o GEMINI_API_KEY en el entorno." });
             }
-            const runner = gemini_key
-                ? new GeminiRunner(gemini_key, client, tools)
-                : geminiRunner!;
+            const runner = gemini_key ? new GeminiRunner(gemini_key, client, tools) : geminiRunner!;
             return runner.run(message.trim(), { model });
         }
 
@@ -943,13 +980,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
 
     // --- POST /audit ---
 
-    const SKILL_PATH = process.env.AUDIT_SKILL_PATH ?? path.resolve(
-        process.env.USERPROFILE ?? process.env.HOME ?? ".",
-        "Proyectos Personales",
-        "material-docente - UIDE",
-        ".claude", "commands",
-        "canvas-module-auditor-uide-v2.md"
-    );
+    const SKILL_PATH = process.env.AUDIT_SKILL_PATH;
 
     app.post<{
         Body: {
@@ -961,14 +992,7 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
             gemini_key?: string;
         };
     }>("/audit", async (request, reply) => {
-        const {
-            course_id,
-            week,
-            course_name,
-            provider = "gemini",
-            model,
-            gemini_key
-        } = request.body ?? {};
+        const { course_id, week, course_name, provider = "gemini", model, gemini_key } = request.body ?? {};
 
         if (!course_id || !week) {
             return reply.code(400).send({ error: "course_id y week son requeridos." });
@@ -979,6 +1003,12 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         }
 
         // Leer el skill de auditoría
+        if (!SKILL_PATH) {
+            return reply.code(503).send({
+                error: "Define AUDIT_SKILL_PATH para habilitar la auditoria."
+            });
+        }
+
         let skillContent: string;
         try {
             skillContent = await fs.readFile(SKILL_PATH, "utf-8");
@@ -998,11 +1028,11 @@ export async function startHttpServer(client: CanvasClient, host = "0.0.0.0", po
         if (provider === "gemini") {
             const apiKey = gemini_key || GEMINI_API_KEY;
             if (!apiKey) {
-                return reply.code(400).send({ error: "Se necesita gemini_key en el body o GEMINI_API_KEY en el entorno." });
+                return reply
+                    .code(400)
+                    .send({ error: "Se necesita gemini_key en el body o GEMINI_API_KEY en el entorno." });
             }
-            const runner = gemini_key
-                ? new GeminiRunner(gemini_key, client, tools)
-                : geminiRunner!;
+            const runner = gemini_key ? new GeminiRunner(gemini_key, client, tools) : geminiRunner!;
             const result = await runner.run(auditMessage, {
                 model: model ?? "gemini-2.5-flash",
                 systemPrompt: skillContent

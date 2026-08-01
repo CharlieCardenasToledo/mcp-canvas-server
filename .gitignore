@@ -40,5 +40,9 @@ image.png
 *.tmp
 
 .playwright-mcp/
-package-lock.json
+
+# Academic artifacts (user-owned, not part of the MCP server)
+paper_ticec2026.md
+ticec-track-cientifico-snapshot.md
+ticec2026_latex/
 

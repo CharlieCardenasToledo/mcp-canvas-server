@@ -9,12 +9,12 @@ export const courseTools: ToolDefinition[] = [
         tool: {
             name: "canvas_list_courses",
             description: "List active courses for the current user in Canvas",
-            inputSchema: { type: "object", properties: {} },
+            inputSchema: { type: "object", properties: {} }
         },
-        handler: async (client: CanvasClient, args: any) => {
+        handler: async (client: CanvasClient, _args: any) => {
             const courses = await client.getCourses();
             return {
-                content: [{ type: "text", text: JSON.stringify(courses, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(courses, null, 2) }]
             };
         }
     },
@@ -29,17 +29,17 @@ export const courseTools: ToolDefinition[] = [
                     course_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
-                    },
+                    }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const pages = await client.getPages(courseId);
             return {
-                content: [{ type: "text", text: JSON.stringify(pages, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(pages, null, 2) }]
             };
         }
     },
@@ -55,21 +55,23 @@ export const courseTools: ToolDefinition[] = [
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
                     },
-                    page_id: { type: "string", description: "The ID or URL-slug of the page" },
+                    page_id: { type: "string", description: "The ID or URL-slug of the page" }
                 },
-                required: ["course_id", "page_id"],
-            },
+                required: ["course_id", "page_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                page_id: z.union([z.string(), z.number()])
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    page_id: z.union([z.string(), z.number()])
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const pageId = String(input.page_id);
             const page = await client.getPage(courseId, pageId);
             return {
-                content: [{ type: "text", text: page.body || page.title + "\n(No content)" }],
+                content: [{ type: "text", text: page.body || page.title + "\n(No content)" }]
             };
         }
     },
@@ -84,17 +86,17 @@ export const courseTools: ToolDefinition[] = [
                     course_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
-                    },
+                    }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const files = await client.getFiles(courseId);
             return {
-                content: [{ type: "text", text: JSON.stringify(files, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(files, null, 2) }]
             };
         }
     },
@@ -108,7 +110,8 @@ export const courseTools: ToolDefinition[] = [
                 properties: {
                     account_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
-                        description: "Account ID where the course will be created (use 'self' or your institution's account ID)"
+                        description:
+                            "Account ID where the course will be created (use 'self' or your institution's account ID)"
                     },
                     name: { type: "string", description: "Course name" },
                     course_code: { type: "string", description: "Short course code (e.g. MAT101)" },
@@ -118,24 +121,26 @@ export const courseTools: ToolDefinition[] = [
                     time_zone: { type: "string", description: "Time zone (e.g. America/Guayaquil)" },
                     locale: { type: "string", description: "Locale (e.g. es, en)" }
                 },
-                required: ["account_id", "name"],
-            },
+                required: ["account_id", "name"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                account_id: z.union([z.number(), z.string()]),
-                name: z.string(),
-                course_code: z.string().optional(),
-                start_at: z.string().optional(),
-                end_at: z.string().optional(),
-                syllabus_body: z.string().optional(),
-                time_zone: z.string().optional(),
-                locale: z.string().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    account_id: z.union([z.number(), z.string()]),
+                    name: z.string(),
+                    course_code: z.string().optional(),
+                    start_at: z.string().optional(),
+                    end_at: z.string().optional(),
+                    syllabus_body: z.string().optional(),
+                    time_zone: z.string().optional(),
+                    locale: z.string().optional()
+                })
+                .parse(args);
             const { account_id, ...courseData } = input;
             const result = await client.createCourse(account_id, courseData);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -163,26 +168,28 @@ export const courseTools: ToolDefinition[] = [
                         description: "Default course home view: feed, wiki, modules, assignments, syllabus"
                     }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                name: z.string().optional(),
-                course_code: z.string().optional(),
-                start_at: z.string().optional(),
-                end_at: z.string().optional(),
-                syllabus_body: z.string().optional(),
-                time_zone: z.string().optional(),
-                locale: z.string().optional(),
-                default_view: z.string().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    name: z.string().optional(),
+                    course_code: z.string().optional(),
+                    start_at: z.string().optional(),
+                    end_at: z.string().optional(),
+                    syllabus_body: z.string().optional(),
+                    time_zone: z.string().optional(),
+                    locale: z.string().optional(),
+                    default_view: z.string().optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const { course_id: _, ...updateData } = input;
             const result = await client.updateCourse(courseId, updateData);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -197,17 +204,17 @@ export const courseTools: ToolDefinition[] = [
                     course_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
-                    },
+                    }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.getSyllabus(courseId);
             return {
-                content: [{ type: "text", text: result.syllabus_body || "(No syllabus content)" }],
+                content: [{ type: "text", text: result.syllabus_body || "(No syllabus content)" }]
             };
         }
     },
@@ -225,18 +232,20 @@ export const courseTools: ToolDefinition[] = [
                     },
                     page_id: { type: "string", description: "The ID or URL-slug of the page to delete" }
                 },
-                required: ["course_id", "page_id"],
-            },
+                required: ["course_id", "page_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                page_id: z.union([z.string(), z.number()])
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    page_id: z.union([z.string(), z.number()])
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.deletePage(courseId, String(input.page_id));
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -251,17 +260,17 @@ export const courseTools: ToolDefinition[] = [
                     course_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
-                    },
+                    }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const students = await client.getEnrollments(courseId);
             return {
-                content: [{ type: "text", text: JSON.stringify(students, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(students, null, 2) }]
             };
         }
     }

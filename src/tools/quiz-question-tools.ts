@@ -25,10 +25,12 @@ export const quizQuestionTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const questions = await client.listQuizQuestions(courseId, input.quiz_id);
             return {
@@ -40,7 +42,8 @@ export const quizQuestionTools: ToolDefinition[] = [
         name: "canvas_create_quiz_question",
         tool: {
             name: "canvas_create_quiz_question",
-            description: "Create a question in a quiz. Supports types: multiple_choice_question, true_false_question, essay_question, short_answer_question, fill_in_multiple_blanks_question, multiple_answers_question, matching_question, numerical_question. Use quiz_group_id to assign the question to a group for random selection.",
+            description:
+                "Create a question in a quiz. Supports types: multiple_choice_question, true_false_question, essay_question, short_answer_question, fill_in_multiple_blanks_question, multiple_answers_question, matching_question, numerical_question. Use quiz_group_id to assign the question to a group for random selection.",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -58,7 +61,8 @@ export const quizQuestionTools: ToolDefinition[] = [
                     },
                     question_type: {
                         type: "string",
-                        description: "Question type (e.g. multiple_choice_question, true_false_question, essay_question)"
+                        description:
+                            "Question type (e.g. multiple_choice_question, true_false_question, essay_question)"
                     },
                     question_text: {
                         type: "string",
@@ -74,7 +78,8 @@ export const quizQuestionTools: ToolDefinition[] = [
                     },
                     answers: {
                         type: "array",
-                        description: "Array of answer objects. For multiple_choice: weight=100 for correct, weight=0 for incorrect.",
+                        description:
+                            "Array of answer objects. For multiple_choice: weight=100 for correct, weight=0 for incorrect.",
                         items: {
                             type: "object",
                             properties: {
@@ -92,21 +97,23 @@ export const quizQuestionTools: ToolDefinition[] = [
         handler: async (client: CanvasClient, args: any) => {
             const answerSchema = z.object({
                 text: z.string(),
-                        blank_id: z.string().optional(),
+                blank_id: z.string().optional(),
                 weight: z.number(),
                 comments: z.string().optional()
             });
 
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.coerce.number(),
-                question_name: z.string().min(1),
-                question_type: z.string().min(1),
-                question_text: z.string().min(1),
-                points_possible: z.coerce.number(),
-                quiz_group_id: z.coerce.number().optional(),
-                answers: z.array(answerSchema).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.coerce.number(),
+                    question_name: z.string().min(1),
+                    question_type: z.string().min(1),
+                    question_text: z.string().min(1),
+                    points_possible: z.coerce.number(),
+                    quiz_group_id: z.coerce.number().optional(),
+                    answers: z.array(answerSchema).optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const question = await client.createQuizQuestion(courseId, input.quiz_id, {
@@ -182,22 +189,24 @@ export const quizQuestionTools: ToolDefinition[] = [
         handler: async (client: CanvasClient, args: any) => {
             const answerSchema = z.object({
                 text: z.string(),
-                        blank_id: z.string().optional(),
+                blank_id: z.string().optional(),
                 weight: z.number(),
                 comments: z.string().optional()
             });
 
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.coerce.number(),
-                question_id: z.coerce.number(),
-                question_name: z.string().min(1).optional(),
-                question_type: z.string().min(1).optional(),
-                question_text: z.string().min(1).optional(),
-                points_possible: z.coerce.number().optional(),
-                quiz_group_id: z.coerce.number().nullable().optional(),
-                answers: z.array(answerSchema).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.coerce.number(),
+                    question_id: z.coerce.number(),
+                    question_name: z.string().min(1).optional(),
+                    question_type: z.string().min(1).optional(),
+                    question_text: z.string().min(1).optional(),
+                    points_possible: z.coerce.number().optional(),
+                    quiz_group_id: z.coerce.number().nullable().optional(),
+                    answers: z.array(answerSchema).optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const data: any = {};
@@ -239,11 +248,13 @@ export const quizQuestionTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.coerce.number(),
-                question_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.coerce.number(),
+                    question_id: z.coerce.number()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.deleteQuizQuestion(courseId, input.quiz_id, input.question_id);
@@ -256,7 +267,8 @@ export const quizQuestionTools: ToolDefinition[] = [
         name: "canvas_create_quiz_group",
         tool: {
             name: "canvas_create_quiz_group",
-            description: "Create a quiz group in a quiz. Questions assigned to the group via quiz_group_id will be randomly picked (pick_count) when students take the quiz.",
+            description:
+                "Create a quiz group in a quiz. Questions assigned to the group via quiz_group_id will be randomly picked (pick_count) when students take the quiz.",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -285,13 +297,15 @@ export const quizQuestionTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                quiz_id: z.coerce.number(),
-                name: z.string().min(1),
-                pick_count: z.coerce.number().min(1),
-                question_points: z.coerce.number().min(0)
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    quiz_id: z.coerce.number(),
+                    name: z.string().min(1),
+                    pick_count: z.coerce.number().min(1),
+                    question_points: z.coerce.number().min(0)
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const group = await client.createQuizGroup(courseId, input.quiz_id, {

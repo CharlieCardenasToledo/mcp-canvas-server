@@ -21,9 +21,11 @@ export const rubricTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()])
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()])
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const rubrics = await client.getRubrics(courseId);
@@ -47,7 +49,17 @@ export const rubricTools: ToolDefinition[] = [
                     rubric_id: { type: "number", description: "The ID of the rubric" },
                     include: {
                         type: "array",
-                        items: { type: "string", enum: ["assessments", "graded_assessments", "peer_assessments", "associations", "assignment_associations", "course_associations"] },
+                        items: {
+                            type: "string",
+                            enum: [
+                                "assessments",
+                                "graded_assessments",
+                                "peer_assessments",
+                                "associations",
+                                "assignment_associations",
+                                "course_associations"
+                            ]
+                        },
                         description: "Optional extra data to include"
                     }
                 },
@@ -55,11 +67,13 @@ export const rubricTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                rubric_id: z.number(),
-                include: z.array(z.string()).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    rubric_id: z.number(),
+                    include: z.array(z.string()).optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const rubric = await client.getRubric(courseId, input.rubric_id, input.include);
@@ -72,7 +86,8 @@ export const rubricTools: ToolDefinition[] = [
         name: "canvas_update_rubric",
         tool: {
             name: "canvas_update_rubric",
-            description: "Update an existing rubric in a course. You can change its title, criteria, ratings, and association settings.",
+            description:
+                "Update an existing rubric in a course. You can change its title, criteria, ratings, and association settings.",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -116,25 +131,33 @@ export const rubricTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                rubric_id: z.number(),
-                title: z.string().optional(),
-                criteria: z.array(z.object({
-                    description: z.string(),
-                    long_description: z.string().optional(),
-                    points: z.number(),
-                    ratings: z.array(z.object({
-                        description: z.string(),
-                        points: z.number(),
-                        long_description: z.string().optional()
-                    }))
-                })).optional(),
-                association_id: z.number().optional(),
-                association_type: z.string().optional().default("Assignment"),
-                use_for_grading: z.boolean().optional(),
-                purpose: z.string().optional().default("grading")
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    rubric_id: z.number(),
+                    title: z.string().optional(),
+                    criteria: z
+                        .array(
+                            z.object({
+                                description: z.string(),
+                                long_description: z.string().optional(),
+                                points: z.number(),
+                                ratings: z.array(
+                                    z.object({
+                                        description: z.string(),
+                                        points: z.number(),
+                                        long_description: z.string().optional()
+                                    })
+                                )
+                            })
+                        )
+                        .optional(),
+                    association_id: z.number().optional(),
+                    association_type: z.string().optional().default("Assignment"),
+                    use_for_grading: z.boolean().optional(),
+                    purpose: z.string().optional().default("grading")
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
 
@@ -207,36 +230,48 @@ export const rubricTools: ToolDefinition[] = [
                             required: ["description", "points", "ratings"]
                         }
                     },
-                    association_id: { type: "number", description: "Optional Assignment ID to associate the rubric with" },
-                    association_type: { type: "string", description: "Optional Type of association, defaults to 'Assignment'" },
+                    association_id: {
+                        type: "number",
+                        description: "Optional Assignment ID to associate the rubric with"
+                    },
+                    association_type: {
+                        type: "string",
+                        description: "Optional Type of association, defaults to 'Assignment'"
+                    },
                     use_for_grading: { type: "boolean", description: "Optional Whether to use the rubric for grading" },
                     purpose: { type: "string", description: "Optional Purpose of association, e.g. 'grading'" }
                 },
-                required: ["course_id", "title", "criteria"],
-            },
+                required: ["course_id", "title", "criteria"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                title: z.string(),
-                criteria: z.array(z.object({
-                    description: z.string(),
-                    long_description: z.string().optional(),
-                    points: z.number(),
-                    ratings: z.array(z.object({
-                        description: z.string(),
-                        points: z.number(),
-                        long_description: z.string().optional()
-                    }))
-                })),
-                association_id: z.number().optional(),
-                association_type: z.string().optional().default("Assignment"),
-                use_for_grading: z.boolean().optional(),
-                purpose: z.string().optional().default("grading")
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    title: z.string(),
+                    criteria: z.array(
+                        z.object({
+                            description: z.string(),
+                            long_description: z.string().optional(),
+                            points: z.number(),
+                            ratings: z.array(
+                                z.object({
+                                    description: z.string(),
+                                    points: z.number(),
+                                    long_description: z.string().optional()
+                                })
+                            )
+                        })
+                    ),
+                    association_id: z.number().optional(),
+                    association_type: z.string().optional().default("Assignment"),
+                    use_for_grading: z.boolean().optional(),
+                    purpose: z.string().optional().default("grading")
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
-            
+
             // Format criteria as a dictionary keyed by index as Canvas API requires indexed hash/array
             const criteriaRecord: Record<string, any> = {};
             input.criteria.forEach((c, index) => {
@@ -267,7 +302,7 @@ export const rubricTools: ToolDefinition[] = [
 
             const rubric = await client.createRubric(courseId, rubricData, associationData);
             return {
-                content: [{ type: "text", text: JSON.stringify(rubric, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(rubric, null, 2) }]
             };
         }
     },
@@ -289,18 +324,20 @@ export const rubricTools: ToolDefinition[] = [
                     use_for_grading: { type: "boolean", description: "Whether to use the rubric for grading" },
                     purpose: { type: "string", description: "Purpose of association, e.g. 'grading'" }
                 },
-                required: ["course_id", "rubric_id", "association_id"],
-            },
+                required: ["course_id", "rubric_id", "association_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                rubric_id: z.number(),
-                association_id: z.number(),
-                association_type: z.string().optional().default("Assignment"),
-                use_for_grading: z.boolean().optional(),
-                purpose: z.string().optional().default("grading")
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    rubric_id: z.number(),
+                    association_id: z.number(),
+                    association_type: z.string().optional().default("Assignment"),
+                    use_for_grading: z.boolean().optional(),
+                    purpose: z.string().optional().default("grading")
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const associationData = {
@@ -313,7 +350,7 @@ export const rubricTools: ToolDefinition[] = [
 
             const association = await client.createRubricAssociation(courseId, associationData);
             return {
-                content: [{ type: "text", text: JSON.stringify(association, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(association, null, 2) }]
             };
         }
     }

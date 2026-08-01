@@ -1,24 +1,35 @@
-FROM node:18-alpine AS builder
+# syntax=docker/dockerfile:1
+
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
-FROM node:18-alpine
+FROM node:24-alpine AS runtime
+
+ENV NODE_ENV=production
+ENV CANVAS_READ_ONLY=true
+ENV MCP_HTTP_HOST=0.0.0.0
 
 WORKDIR /app
 
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
 
-# Expose environment variables that need to be set
-ENV CANVAS_API_TOKEN=""
-ENV CANVAS_API_DOMAIN=""
+RUN chown -R node:node /app
 
-# Run HTTP mode for Render/GPT Actions
-CMD ["sh", "-c", "node dist/index.js serve-http --host 0.0.0.0 --port ${PORT:-3000}"]
+USER node
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"
+
+CMD ["sh", "-c", "node dist/index.js serve-http --host ${MCP_HTTP_HOST:-0.0.0.0} --port ${PORT:-3000}"]

@@ -33,17 +33,19 @@ export const assignmentTools: ToolDefinition[] = [
                         description: "If true, return full assignment objects. Default false returns compact payload."
                     }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                search: z.string().optional(),
-                limit: z.coerce.number().optional(),
-                upcoming_only: z.boolean().optional(),
-                full: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    search: z.string().optional(),
+                    limit: z.coerce.number().optional(),
+                    upcoming_only: z.boolean().optional(),
+                    full: z.boolean().optional()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const assignments = await client.getAssignments(courseId);
             const search = (input.search || "").toLowerCase().trim();
@@ -60,7 +62,7 @@ export const assignmentTools: ToolDefinition[] = [
 
             if (input.full) {
                 return {
-                    content: [{ type: "text", text: JSON.stringify(filtered.slice(0, limit), null, 2) }],
+                    content: [{ type: "text", text: JSON.stringify(filtered.slice(0, limit), null, 2) }]
                 };
             }
 
@@ -75,7 +77,7 @@ export const assignmentTools: ToolDefinition[] = [
             }));
 
             return {
-                content: [{ type: "text", text: JSON.stringify(compact, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(compact, null, 2) }]
             };
         }
     },
@@ -91,22 +93,24 @@ export const assignmentTools: ToolDefinition[] = [
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
                     },
-                    assignment_id: { type: "number", description: "The ID of the assignment" },
+                    assignment_id: { type: "number", description: "The ID of the assignment" }
                 },
-                required: ["course_id", "assignment_id"],
-            },
+                required: ["course_id", "assignment_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const assignment = await client.getAssignment(courseId, input.assignment_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }]
             };
-            }
+        }
     },
     {
         name: "canvas_list_assignment_groups",
@@ -119,17 +123,17 @@ export const assignmentTools: ToolDefinition[] = [
                     course_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
-                    },
+                    }
                 },
-                required: ["course_id"],
-            },
+                required: ["course_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const groups = await client.getAssignmentGroups(courseId);
             return {
-                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(groups, null, 2) }]
             };
         }
     },
@@ -145,20 +149,22 @@ export const assignmentTools: ToolDefinition[] = [
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
                     },
-                    assignment_id: { type: "number", description: "The ID of the assignment" },
+                    assignment_id: { type: "number", description: "The ID of the assignment" }
                 },
-                required: ["course_id", "assignment_id"],
-            },
+                required: ["course_id", "assignment_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const submissions = await client.getSubmissions(courseId, input.assignment_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(submissions, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(submissions, null, 2) }]
             };
         }
     },
@@ -175,21 +181,23 @@ export const assignmentTools: ToolDefinition[] = [
                         description: "The ID or name of the course"
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" },
-                    student_id: { type: "number", description: "The ID of the student" },
+                    student_id: { type: "number", description: "The ID of the student" }
                 },
-                required: ["course_id", "assignment_id", "student_id"],
-            },
+                required: ["course_id", "assignment_id", "student_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                student_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    student_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const submission = await client.getSingleSubmission(courseId, input.assignment_id, input.student_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(submission, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(submission, null, 2) }]
             };
         }
     },
@@ -206,21 +214,23 @@ export const assignmentTools: ToolDefinition[] = [
                         description: "The ID or name of the course"
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" },
-                    student_id: { type: "number", description: "The ID of the student" },
+                    student_id: { type: "number", description: "The ID of the student" }
                 },
-                required: ["course_id", "assignment_id", "student_id"],
-            },
+                required: ["course_id", "assignment_id", "student_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                student_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    student_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const submission = await client.getSingleSubmission(courseId, input.assignment_id, input.student_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(submission.submission_comments || [], null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(submission.submission_comments || [], null, 2) }]
             };
         }
     },
@@ -238,22 +248,29 @@ export const assignmentTools: ToolDefinition[] = [
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment" },
                     student_id: { type: "number", description: "The ID of the student" },
-                    comment_id: { type: "number", description: "The ID of the comment to delete" },
+                    comment_id: { type: "number", description: "The ID of the comment to delete" }
                 },
-                required: ["course_id", "assignment_id", "student_id", "comment_id"],
-            },
+                required: ["course_id", "assignment_id", "student_id", "comment_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                student_id: z.coerce.number(),
-                comment_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    student_id: z.coerce.number(),
+                    comment_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
-            const result = await client.deleteSubmissionComment(courseId, input.assignment_id, input.student_id, input.comment_id);
+            const result = await client.deleteSubmissionComment(
+                courseId,
+                input.assignment_id,
+                input.student_id,
+                input.comment_id
+            );
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -284,16 +301,18 @@ export const assignmentTools: ToolDefinition[] = [
                     }
                 },
                 required: ["course_id", "assignment_id"]
-            },
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                due_at: z.string().nullable().optional(),
-                unlock_at: z.string().nullable().optional(),
-                lock_at: z.string().nullable().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    due_at: z.string().nullable().optional(),
+                    unlock_at: z.string().nullable().optional(),
+                    lock_at: z.string().nullable().optional()
+                })
+                .parse(args);
 
             if (input.due_at === undefined && input.unlock_at === undefined && input.lock_at === undefined) {
                 throw new Error("At least one date field is required: due_at, unlock_at, or lock_at.");
@@ -307,7 +326,7 @@ export const assignmentTools: ToolDefinition[] = [
             });
 
             return {
-                content: [{ type: "text", text: JSON.stringify(updatedAssignment, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(updatedAssignment, null, 2) }]
             };
         }
     },
@@ -338,25 +357,28 @@ export const assignmentTools: ToolDefinition[] = [
                     },
                     dry_run: {
                         type: "boolean",
-                        description: "If true, show matches without applying updates"
+                        description:
+                            "Show matches without applying updates. Defaults to true for safety; set to false to apply."
                     }
                 },
                 required: ["course_id", "query_terms", "due_at"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                query_terms: z.array(z.string()).min(1),
-                due_at: z.string(),
-                limit: z.coerce.number().optional(),
-                dry_run: z.boolean().optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    query_terms: z.array(z.string()).min(1),
+                    due_at: z.string(),
+                    limit: z.coerce.number().optional(),
+                    dry_run: z.boolean().optional().default(true)
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const terms = input.query_terms.map((t) => t.toLowerCase().trim()).filter(Boolean);
             const limit = Math.min(Math.max(input.limit ?? 20, 1), 100);
-            const dryRun = input.dry_run === true;
+            const dryRun = input.dry_run !== false;
 
             const assignments = await client.getAssignments(courseId);
             const matched = assignments
@@ -404,16 +426,22 @@ export const assignmentTools: ToolDefinition[] = [
             }
 
             return {
-                content: [{
-                    type: "text",
-                    text: JSON.stringify({
-                        course_id: courseId,
-                        matched_count: matched.length,
-                        updated_count: results.filter((r) => r.status === "updated").length,
-                        dry_run: dryRun,
-                        results
-                    }, null, 2)
-                }],
+                content: [
+                    {
+                        type: "text",
+                        text: JSON.stringify(
+                            {
+                                course_id: courseId,
+                                matched_count: matched.length,
+                                updated_count: results.filter((r) => r.status === "updated").length,
+                                dry_run: dryRun,
+                                results
+                            },
+                            null,
+                            2
+                        )
+                    }
+                ]
             };
         }
     },
@@ -441,7 +469,18 @@ export const assignmentTools: ToolDefinition[] = [
                         type: "array",
                         items: {
                             type: "string",
-                            enum: ["online_upload", "online_text_entry", "online_url", "media_recording", "student_annotation", "online_quiz", "none", "on_paper", "discussion_topic", "external_tool"]
+                            enum: [
+                                "online_upload",
+                                "online_text_entry",
+                                "online_url",
+                                "media_recording",
+                                "student_annotation",
+                                "online_quiz",
+                                "none",
+                                "on_paper",
+                                "discussion_topic",
+                                "external_tool"
+                            ]
                         },
                         description: "List of supported submission types"
                     },
@@ -481,23 +520,25 @@ export const assignmentTools: ToolDefinition[] = [
                     }
                 },
                 required: ["course_id", "name"]
-            },
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                name: z.string(),
-                description: z.string().optional(),
-                submission_types: z.array(z.string()).optional(),
-                points_possible: z.number().optional(),
-                grading_type: z.string().optional(),
-                due_at: z.string().optional(),
-                lock_at: z.string().optional(),
-                unlock_at: z.string().optional(),
-                assignment_group_id: z.number().optional(),
-                published: z.boolean().optional(),
-                allowed_extensions: z.array(z.string()).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    name: z.string(),
+                    description: z.string().optional(),
+                    submission_types: z.array(z.string()).optional(),
+                    points_possible: z.number().optional(),
+                    grading_type: z.string().optional(),
+                    due_at: z.string().optional(),
+                    lock_at: z.string().optional(),
+                    unlock_at: z.string().optional(),
+                    assignment_group_id: z.number().optional(),
+                    published: z.boolean().optional(),
+                    allowed_extensions: z.array(z.string()).optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const assignmentData: any = {
@@ -518,7 +559,7 @@ export const assignmentTools: ToolDefinition[] = [
             const assignment = await client.createAssignment(courseId, assignmentData);
 
             return {
-                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }]
             };
         }
     },
@@ -526,7 +567,8 @@ export const assignmentTools: ToolDefinition[] = [
         name: "canvas_submit_assignment",
         tool: {
             name: "canvas_submit_assignment",
-            description: "Submit a file upload assignment as a student. Uploads a local file and creates the submission in one step.",
+            description:
+                "Submit a file upload assignment as a student. Uploads a local file and creates the submission in one step.",
             inputSchema: {
                 type: "object",
                 properties: {
@@ -555,13 +597,15 @@ export const assignmentTools: ToolDefinition[] = [
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                file_path: z.string(),
-                file_name: z.string(),
-                content_type: z.string()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    file_path: z.string(),
+                    file_name: z.string(),
+                    content_type: z.string()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const submission = await client.submitAssignmentFile(
@@ -591,18 +635,20 @@ export const assignmentTools: ToolDefinition[] = [
                     },
                     assignment_id: { type: "number", description: "The ID of the assignment to delete" }
                 },
-                required: ["course_id", "assignment_id"],
-            },
+                required: ["course_id", "assignment_id"]
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number()
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const result = await client.deleteAssignment(courseId, input.assignment_id);
             return {
-                content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
             };
         }
     },
@@ -634,7 +680,18 @@ export const assignmentTools: ToolDefinition[] = [
                         type: "array",
                         items: {
                             type: "string",
-                            enum: ["online_upload", "online_text_entry", "online_url", "media_recording", "student_annotation", "online_quiz", "none", "on_paper", "discussion_topic", "external_tool"]
+                            enum: [
+                                "online_upload",
+                                "online_text_entry",
+                                "online_url",
+                                "media_recording",
+                                "student_annotation",
+                                "online_quiz",
+                                "none",
+                                "on_paper",
+                                "discussion_topic",
+                                "external_tool"
+                            ]
                         },
                         description: "List of supported submission types"
                     },
@@ -674,24 +731,26 @@ export const assignmentTools: ToolDefinition[] = [
                     }
                 },
                 required: ["course_id", "assignment_id"]
-            },
+            }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({
-                course_id: z.union([z.number(), z.string()]),
-                assignment_id: z.coerce.number(),
-                name: z.string().optional(),
-                description: z.string().optional(),
-                submission_types: z.array(z.string()).optional(),
-                points_possible: z.number().optional(),
-                grading_type: z.string().optional(),
-                due_at: z.string().optional(),
-                lock_at: z.string().optional(),
-                unlock_at: z.string().optional(),
-                assignment_group_id: z.number().optional(),
-                published: z.boolean().optional(),
-                allowed_extensions: z.array(z.string()).optional()
-            }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    assignment_id: z.coerce.number(),
+                    name: z.string().optional(),
+                    description: z.string().optional(),
+                    submission_types: z.array(z.string()).optional(),
+                    points_possible: z.number().optional(),
+                    grading_type: z.string().optional(),
+                    due_at: z.string().optional(),
+                    lock_at: z.string().optional(),
+                    unlock_at: z.string().optional(),
+                    assignment_group_id: z.number().optional(),
+                    published: z.boolean().optional(),
+                    allowed_extensions: z.array(z.string()).optional()
+                })
+                .parse(args);
 
             const courseId = await resolveCourseId(client, input.course_id);
             const assignment = await client.updateAssignment(courseId, input.assignment_id, {
@@ -709,7 +768,7 @@ export const assignmentTools: ToolDefinition[] = [
             });
 
             return {
-                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }],
+                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }]
             };
         }
     }
