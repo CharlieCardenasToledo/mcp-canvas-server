@@ -3,6 +3,12 @@ name: Publish to npm
 on:
     release:
         types: [published]
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Tag a publicar (ej: @charlie.act7/canvas-mcp-server-v1.3.1)"
+                required: true
+                type: string
 
 permissions:
     contents: read
@@ -14,14 +20,16 @@ concurrency:
 
 jobs:
     publish:
-        if: github.event.release.prerelease == false
+        if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
         runs-on: ubuntu-latest
         timeout-minutes: 20
+        env:
+            EFFECTIVE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
         steps:
             - name: Check out the released tag
               uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event.release.tag_name }}
+                  ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.event.release.tag_name }}
                   fetch-depth: 0
 
             - name: Setup Node.js 24
@@ -48,7 +56,7 @@ jobs:
             - name: Validate release metadata
               id: release
               env:
-                  RELEASE_TAG: ${{ github.event.release.tag_name }}
+                  RELEASE_TAG: ${{ env.EFFECTIVE_TAG }}
                   GITHUB_REPOSITORY: ${{ github.repository }}
               run: npm run release:check
 
