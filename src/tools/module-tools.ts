@@ -8,24 +8,46 @@ export const moduleTools: ToolDefinition[] = [
         name: "canvas_list_modules",
         tool: {
             name: "canvas_list_modules",
-            description: "List modules and their items for a specific course",
+            description:
+                "List modules for a course. Items are omitted by default; use include_items for item details, or module_id / name_contains to narrow the result.",
             inputSchema: {
                 type: "object",
                 properties: {
                     course_id: {
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
+                    },
+                    module_id: { type: "number", description: "Return only this module" },
+                    name_contains: {
+                        type: "string",
+                        description: "Return only modules whose name contains this text (case-insensitive)"
+                    },
+                    include_items: {
+                        type: "boolean",
+                        description: "Include each module's items (default false)"
                     }
                 },
                 required: ["course_id"]
             }
         },
         handler: async (client: CanvasClient, args: any) => {
-            const input = z.object({ course_id: z.union([z.number(), z.string()]) }).parse(args);
+            const input = z
+                .object({
+                    course_id: z.union([z.number(), z.string()]),
+                    module_id: z.coerce.number().optional(),
+                    name_contains: z.string().optional(),
+                    include_items: z.boolean().optional().default(false)
+                })
+                .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
-            const modules = await client.getModules(courseId);
+            const needle = (input.name_contains || "").toLowerCase().trim();
+            const modules = (await client.getModules(courseId, input.include_items)).filter(
+                (m) =>
+                    (input.module_id === undefined || m.id === input.module_id) &&
+                    (!needle || (m.name || "").toLowerCase().includes(needle))
+            );
             return {
-                content: [{ type: "text", text: JSON.stringify(modules, null, 2) }]
+                content: [{ type: "text", text: JSON.stringify({ total: modules.length, modules }, null, 2) }]
             };
         }
     },

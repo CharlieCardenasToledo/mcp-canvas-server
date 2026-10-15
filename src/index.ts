@@ -3,11 +3,8 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import chalk from "chalk";
 import { Command } from "commander";
 import * as dotenv from "dotenv";
-import inquirer from "inquirer";
 import { ConfigManager } from "./common/config-manager.js";
 import { getConfiguredTools } from "./common/tool-registry.js";
-import { startRestServer } from "./http-server.js";
-import { startMcpHttpServer } from "./mcp-http-server.js";
 import { createMcpServer } from "./server-factory.js";
 import { CanvasClient } from "./services/canvas-client.js";
 import { packageMetadata } from "./version.js";
@@ -23,6 +20,8 @@ program
     .command("config")
     .description("Configure Canvas credentials interactively")
     .action(async () => {
+        // Loaded lazily: inquirer is only needed here and slows down stdio startup.
+        const { default: inquirer } = await import("inquirer");
         console.log(chalk.blue.bold("\nCanvas MCP Server Configuration\n"));
 
         const answers = await inquirer.prompt([
@@ -86,6 +85,7 @@ program
     .option("--host <host>", "Host to bind", process.env.MCP_HTTP_HOST || "127.0.0.1")
     .option("--port <port>", "Port to bind", process.env.MCP_HTTP_PORT || "3000")
     .action(async (options: { host: string; port: string }) => {
+        const { startMcpHttpServer } = await import("./mcp-http-server.js");
         await startMcpHttpServer(getClient(), {
             host: options.host,
             port: Number.parseInt(options.port, 10),
@@ -99,6 +99,7 @@ program
     .option("--host <host>", "Host to bind", process.env.REST_HOST || "127.0.0.1")
     .option("--port <port>", "Port to bind", process.env.REST_PORT || "3001")
     .action(async (options: { host: string; port: string }) => {
+        const { startRestServer } = await import("./http-server.js");
         await startRestServer(getClient(), options.host, Number.parseInt(options.port, 10), getConfiguredTools());
     });
 

@@ -57,6 +57,16 @@ export const fileTools: ToolDefinition[] = [
                     file_name: { type: "string", description: "The name to give the file in Canvas" },
                     content_type: { type: "string", description: "The MIME type of the file (e.g., application/pdf)" },
                     parent_folder_id: { type: "number", description: "Optional folder ID in Canvas to upload to" },
+                    parent_folder_path: {
+                        type: "string",
+                        description:
+                            "Optional destination folder by name/path (e.g. 'Plantillas/Unidad 1'). Created if missing. Ignored when parent_folder_id is given."
+                    },
+                    on_duplicate: {
+                        type: "string",
+                        enum: ["overwrite", "rename"],
+                        description: "What to do if a file with the same name exists in the folder (default rename)"
+                    },
                     module_id: { type: "number", description: "Optional: Add the uploaded file to this module" },
                     position: { type: "number", description: "Optional position in the module" },
                     indent: { type: "number", description: "Optional level of indentation (0-3)" }
@@ -72,6 +82,8 @@ export const fileTools: ToolDefinition[] = [
                     file_name: z.string(),
                     content_type: z.string(),
                     parent_folder_id: z.number().optional(),
+                    parent_folder_path: z.string().optional(),
+                    on_duplicate: z.enum(["overwrite", "rename"]).optional(),
                     module_id: z.number().optional(),
                     position: z.number().optional(),
                     indent: z.number().optional()
@@ -89,7 +101,8 @@ export const fileTools: ToolDefinition[] = [
                 resolvedPath,
                 input.file_name,
                 input.content_type,
-                input.parent_folder_id
+                input.parent_folder_id,
+                { parentFolderPath: input.parent_folder_path, onDuplicate: input.on_duplicate }
             );
 
             let resultText = `File uploaded successfully: ${file.display_name} (ID: ${file.id})`;
@@ -283,26 +296,63 @@ export const fileTools: ToolDefinition[] = [
         name: "canvas_delete_file",
         tool: {
             name: "canvas_delete_file",
-            description: "Delete a file from Canvas",
+            description:
+                "Delete a file from Canvas, by file_id or by name (with course_id and optionally folder_id / folder_path)",
             inputSchema: {
                 type: "object",
                 properties: {
-                    file_id: { type: "number", description: "The ID of the file to delete" }
-                },
-                required: ["file_id"]
+                    file_id: { type: "number", description: "The ID of the file to delete" },
+                    course_id: {
+                        anyOf: [{ type: "number" }, { type: "string" }],
+                        description: "The ID or name of the course (required when deleting by name)"
+                    },
+                    name: { type: "string", description: "Exact file name (display_name) to delete" },
+                    folder_id: { type: "number", description: "Restrict the name match to this folder" },
+                    folder_path: {
+                        type: "string",
+                        description: "Restrict the name match to this folder path (e.g. 'Plantillas/Unidad 1')"
+                    }
+                }
             }
         },
         handler: async (client: CanvasClient, args: any) => {
             const input = z
                 .object({
-                    file_id: z.number()
+                    file_id: z.number().optional(),
+                    course_id: z.union([z.number(), z.string()]).optional(),
+                    name: z.string().optional(),
+                    folder_id: z.number().optional(),
+                    folder_path: z.string().optional()
                 })
                 .parse(args);
 
-            await client.deleteFile(input.file_id);
+            let fileId = input.file_id;
+            if (fileId === undefined) {
+                if (!input.name || input.course_id === undefined) {
+                    throw new Error("Provide file_id, or course_id together with name.");
+                }
+                const courseId = await resolveCourseId(client, input.course_id);
+                let folderId = input.folder_id;
+                if (folderId === undefined && input.folder_path) {
+                    folderId = await client.findFolderIdByPath(courseId, input.folder_path);
+                    if (folderId === undefined) throw new Error(`Folder not found: ${input.folder_path}`);
+                }
+                const matches = (await client.getFiles(courseId)).filter(
+                    (f) => f.display_name === input.name && (folderId === undefined || f.folder_id === folderId)
+                );
+                if (matches.length === 0) throw new Error(`No file named "${input.name}" found.`);
+                if (matches.length > 1) {
+                    throw new Error(
+                        `Multiple files named "${input.name}" found (ids: ${matches.map((f) => f.id).join(", ")}). Narrow with folder_id/folder_path or pass file_id.`
+                    );
+                }
+                fileId = matches[0].id;
+            }
+
+            await client.deleteFile(fileId);
 
             return {
-                content: [{ type: "text", text: `File ${input.file_id} deleted successfully.` }]
+                content: [{ type: "text", text: `File ${fileId} deleted successfully.` }]
             };
         }
     }

@@ -130,6 +130,14 @@ export const quizTools: ToolDefinition[] = [
                     published: { type: "boolean" },
                     assignment_group_id: { type: "number" },
                     allowed_attempts: { type: "number" },
+                    scoring_policy: {
+                        type: "string",
+                        enum: ["keep_highest", "keep_latest", "keep_average"],
+                        description: "Which attempt is kept when several are allowed"
+                    },
+                    due_at: { type: "string", description: "ISO-8601 due date" },
+                    unlock_at: { type: "string", description: "ISO-8601 unlock date" },
+                    lock_at: { type: "string", description: "ISO-8601 lock date" },
                     require_lockdown_browser: { type: "boolean" },
                     show_correct_answers: { type: "boolean" },
                     show_correct_answers_at: { type: "string", description: "ISO-8601 date to show correct answers" }
@@ -149,6 +157,10 @@ export const quizTools: ToolDefinition[] = [
                     published: z.boolean().optional(),
                     assignment_group_id: z.number().optional(),
                     allowed_attempts: z.number().optional(),
+                    scoring_policy: z.enum(["keep_highest", "keep_latest", "keep_average"]).optional(),
+                    due_at: z.string().optional(),
+                    unlock_at: z.string().optional(),
+                    lock_at: z.string().optional(),
                     require_lockdown_browser: z.boolean().optional(),
                     show_correct_answers: z.boolean().optional(),
                     show_correct_answers_at: z.string().optional()
@@ -673,6 +685,12 @@ export const quizTools: ToolDefinition[] = [
                         type: "number",
                         description: "Number of allowed attempts. Use -1 for unlimited."
                     },
+                    scoring_policy: {
+                        type: "string",
+                        enum: ["keep_highest", "keep_latest", "keep_average"],
+                        description: "Which attempt is kept when several are allowed"
+                    },
+                    assignment_group_id: { type: "number" },
                     due_at: { type: "string", description: "ISO-8601 due date. Use null to clear.", nullable: true },
                     unlock_at: {
                         type: "string",
@@ -703,6 +721,8 @@ export const quizTools: ToolDefinition[] = [
                     time_limit: z.number().nullable().optional(),
                     shuffle_answers: z.boolean().optional(),
                     allowed_attempts: z.number().optional(),
+                    scoring_policy: z.enum(["keep_highest", "keep_latest", "keep_average"]).optional(),
+                    assignment_group_id: z.number().optional(),
                     due_at: z.string().nullable().optional(),
                     unlock_at: z.string().nullable().optional(),
                     lock_at: z.string().nullable().optional(),

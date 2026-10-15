@@ -384,9 +384,10 @@ export class CanvasClient {
         });
     }
 
-    async getModules(courseId: number): Promise<Module[]> {
+    async getModules(courseId: number, includeItems = true): Promise<Module[]> {
         return this.getAllPages<Module>(`courses/${courseId}/modules`, {
-            include: ["items"]
+            ...(includeItems ? { include: ["items"] } : {}),
+            per_page: 100
         });
     }
 
@@ -870,7 +871,8 @@ export class CanvasClient {
         filePath: string,
         fileName: string,
         contentType: string,
-        parentFolderId?: number | string
+        parentFolderId?: number | string,
+        options: { parentFolderPath?: string; onDuplicate?: "overwrite" | "rename" } = {}
     ): Promise<FileAttachment> {
         // Step 1: Pre-flight request to Canvas
         const preflightData: any = {
@@ -879,6 +881,11 @@ export class CanvasClient {
         };
         if (parentFolderId) {
             preflightData.parent_folder_id = parentFolderId;
+        } else if (options.parentFolderPath) {
+            preflightData.parent_folder_path = options.parentFolderPath;
+        }
+        if (options.onDuplicate) {
+            preflightData.on_duplicate = options.onDuplicate;
         }
 
         const preflightResponse = await this.client.post(`courses/${courseId}/files`, preflightData);
@@ -977,6 +984,23 @@ export class CanvasClient {
 
     async getFolders(courseId: number): Promise<Folder[]> {
         return this.getAllPages<Folder>(`courses/${courseId}/folders`);
+    }
+
+    async findFolderIdByPath(courseId: number, folderPath: string): Promise<number | undefined> {
+        const wanted = folderPath
+            .split("/")
+            .map((part) => part.trim())
+            .filter(Boolean)
+            .join("/")
+            .toLowerCase();
+        const folders = await this.getFolders(courseId);
+        const match = folders.find((f) => {
+            const full = String(f.full_name ?? "")
+                .replace(/^course files\/?/i, "")
+                .toLowerCase();
+            return full === wanted;
+        });
+        return match?.id;
     }
 
     async getFolder(folderId: number): Promise<Folder> {
