@@ -66,6 +66,8 @@ export interface Assignment {
     rubric?: RubricCriterion[];
     rubric_settings?: RubricSettings;
     use_rubric_for_grading?: boolean;
+    group_category_id?: number | null;
+    grade_group_students_individually?: boolean;
 }
 
 export interface FileAttachment {

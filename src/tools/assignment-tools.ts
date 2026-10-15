@@ -119,7 +119,11 @@ export const assignmentTools: ToolDefinition[] = [
                         anyOf: [{ type: "number" }, { type: "string" }],
                         description: "The ID or name of the course"
                     },
-                    assignment_id: { type: "number", description: "The ID of the assignment" }
+                    assignment_id: { type: "number", description: "The ID of the assignment" },
+                    verbose: {
+                        type: "boolean",
+                        description: "If true, keep technical fields such as secure_params and lti_context_id"
+                    }
                 },
                 required: ["course_id", "assignment_id"]
             }
@@ -128,13 +132,18 @@ export const assignmentTools: ToolDefinition[] = [
             const input = z
                 .object({
                     course_id: z.union([z.number(), z.string()]),
-                    assignment_id: z.coerce.number()
+                    assignment_id: z.coerce.number(),
+                    verbose: z.boolean().optional()
                 })
                 .parse(args);
             const courseId = await resolveCourseId(client, input.course_id);
             const assignment = await client.getAssignment(courseId, input.assignment_id);
+            const output: Record<string, unknown> = { ...assignment };
+            if (!input.verbose) {
+                for (const key of ["secure_params", "lti_context_id"]) delete output[key];
+            }
             return {
-                content: [{ type: "text", text: JSON.stringify(assignment, null, 2) }]
+                content: [{ type: "text", text: JSON.stringify(output, null, 2) }]
             };
         }
     },
@@ -543,6 +552,14 @@ export const assignmentTools: ToolDefinition[] = [
                         type: "array",
                         items: { type: "string" },
                         description: "Allowed extensions if submission_types includes 'online_upload'"
+                    },
+                    group_category_id: {
+                        type: "number",
+                        description: "Group category ID that makes this a group assignment"
+                    },
+                    grade_group_students_individually: {
+                        type: "boolean",
+                        description: "If true, grade each member of a group separately instead of the whole group"
                     }
                 },
                 required: ["course_id", "name"]
@@ -562,7 +579,9 @@ export const assignmentTools: ToolDefinition[] = [
                     unlock_at: z.string().optional(),
                     assignment_group_id: z.number().optional(),
                     published: z.boolean().optional(),
-                    allowed_extensions: z.array(z.string()).optional()
+                    allowed_extensions: z.array(z.string()).optional(),
+                    group_category_id: z.number().optional(),
+                    grade_group_students_individually: z.boolean().optional()
                 })
                 .parse(args);
 
@@ -581,6 +600,9 @@ export const assignmentTools: ToolDefinition[] = [
             if (input.assignment_group_id !== undefined) assignmentData.assignment_group_id = input.assignment_group_id;
             if (input.published !== undefined) assignmentData.published = input.published;
             if (input.allowed_extensions !== undefined) assignmentData.allowed_extensions = input.allowed_extensions;
+            if (input.group_category_id !== undefined) assignmentData.group_category_id = input.group_category_id;
+            if (input.grade_group_students_individually !== undefined)
+                assignmentData.grade_group_students_individually = input.grade_group_students_individually;
 
             const assignment = await client.createAssignment(courseId, assignmentData);
 
@@ -754,6 +776,14 @@ export const assignmentTools: ToolDefinition[] = [
                         type: "array",
                         items: { type: "string" },
                         description: "Allowed extensions if submission_types includes 'online_upload'"
+                    },
+                    group_category_id: {
+                        type: "number",
+                        description: "Group category ID that makes this a group assignment"
+                    },
+                    grade_group_students_individually: {
+                        type: "boolean",
+                        description: "If true, grade each member of a group separately instead of the whole group"
                     }
                 },
                 required: ["course_id", "assignment_id"]
@@ -774,7 +804,9 @@ export const assignmentTools: ToolDefinition[] = [
                     unlock_at: z.string().optional(),
                     assignment_group_id: z.number().optional(),
                     published: z.boolean().optional(),
-                    allowed_extensions: z.array(z.string()).optional()
+                    allowed_extensions: z.array(z.string()).optional(),
+                    group_category_id: z.number().optional(),
+                    grade_group_students_individually: z.boolean().optional()
                 })
                 .parse(args);
 
@@ -790,7 +822,9 @@ export const assignmentTools: ToolDefinition[] = [
                 unlock_at: input.unlock_at,
                 assignment_group_id: input.assignment_group_id,
                 published: input.published,
-                allowed_extensions: input.allowed_extensions
+                allowed_extensions: input.allowed_extensions,
+                group_category_id: input.group_category_id,
+                grade_group_students_individually: input.grade_group_students_individually
             });
 
             return {
